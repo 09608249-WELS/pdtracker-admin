@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>PD Tracker Admin Entry</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 16px;
+    }
+    h1 { margin-bottom: 10px; }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    fieldset {
+      margin-bottom: 20px;
+      border-radius: 4px;
+      padding: 12px 16px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 6px 8px;
+      margin-top: 4px;
+      box-sizing: border-box;
+    }
+    .two-column {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 800px) {
+      .two-column { grid-template-columns: 1fr; }
+    }
+
+    .staff-container {
+      border: 1px solid #ccc;
+      background: #fafafa;
+      border-radius: 4px;
+      padding: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .staff-item {
+      display: flex;
+      flex-direction: column;
+      margin: 2px 0;
+    }
+    .staff-item-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .staff-meta {
+      margin-left: 24px;
+      color: #555;
+      font-size: 0.85em;
+    }
+
+    .filters-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 8px 16px;
+      margin-bottom: 8px;
+    }
+
+    .select-all-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 10px 0;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-weight: 600;
+    }
+
+    .staff-filter-label {
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+    .filter-group {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 4px 6px;
+      max-height: 90px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .filter-checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 2px 6px 2px 0;
+      font-size: 0.85em;
+      font-weight: 400;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="top-bar">
+  <h1>PD Tracker Admin Entry</h1>
+  <!-- Placeholder for future Records Report page -->
+  <span style="font-size:0.9rem;color:#666;">(Records Report coming soon)</span>
+</div>
+
+<form id="pdForm">
+  <div class="two-column">
+
+    <!-- LEFT COLUMN – PD DETAILS -->
+    <div>
+      <fieldset>
+        <legend><strong>Section 1 – PD Details</strong></legend>
+
+        <label for="pd_startDate">Start Date *</label>
+        <input type="date" id="pd_startDate" required>
+
+        <label for="pd_endDate">End Date</label>
+        <input type="date" id="pd_endDate">
+
+        <label for="pd_area">Area *</label>
+        <select id="pd_area" required>
+          <option value="">Select Area</option>
+        </select>
+
+        <label for="pd_venue">Venue *</label>
+        <select id="pd_venue" required>
+          <option value="">Select Venue</option>
+        </select>
+        <input type="text" id="pd_otherVenue" placeholder="Enter other venue"
+               style="display:none; margin-top:4px;">
+
+        <label for="pd_title">Title *</label>
+        <input type="text" id="pd_title" required>
+
+        <label for="pd_hours">Hours *</label>
+        <input type="number" id="pd_hours" min="0" step="0.5" required>
+
+        <label>
+          <input type="checkbox" id="pd_accrual">
+          Accrual (store hours)
+        </label>
+
+        <label for="pd_crtCost">CRT Cost</label>
+        <input type="number" id="pd_crtCost" min="0" step="0.01">
+
+        <label for="pd_enrolCost">Enrol Cost</label>
+        <input type="number" id="pd_enrolCost" min="0" step="0.01">
+
+        <label for="pd_otherCost">Other Cost</label>
+        <input type="number" id="pd_otherCost" min="0" step="0.01">
+      </fieldset>
+    </div>
+
+    <!-- RIGHT COLUMN – STAFF -->
+    <div>
+      <fieldset>
+        <legend><strong>Section 2 – Staff Attending</strong></legend>
+        <p>Select staff members attending this PD *</p>
+
+        <!-- Keep order: Campus -> Position -> Sector -->
+        <div class="filters-row">
+          <div>
+            <span class="staff-filter-label">Campus</span>
+            <div id="pd_campusFilterGroup" class="filter-group"></div>
+          </div>
+          <div>
+            <span class="staff-filter-label">Position</span>
+            <div id="pd_positionFilterGroup" class="filter-group"></div>
+          </div>
+          <div>
+            <span class="staff-filter-label">Sector</span>
+            <div id="pd_sectorFilterGroup" class="filter-group"></div>
+          </div>
+        </div>
+
+        <label>Search staff</label>
+        <input type="text" id="pd_staffSearch" placeholder="Type to filter staff list…">
+<div id="pd_selectedCount" style="margin:6px 0; font-weight:600;">
+  Selected: 0
+</div>
+
+        <div class="select-all-row">
+          <input type="checkbox" id="pd_selectAllStaff">
+          <label for="pd_selectAllStaff" style="font-weight:400;">Select all (filtered)</label>
+        </div>
+
+        <div id="pd_staffContainer" class="staff-container">
+          <p id="pd_staffLoading">Loading staff…</p>
+        </div>
+      </fieldset>
+    </div>
+
+  </div>
+
+  <button
+    type="submit"
+    id="pd_submitBtn"
+    style="margin:20px 0 40px 0;
+           padding:18px;
+           width:100%;
+           font-size:1.3rem;
+           border-radius:10px;
+           font-weight:700;
+           background:#1976d2;
+           color:#fff;
+           border:none;"
+  >
+    Submit PD Entry
+  </button>
+
+  <div id="pd_status" class="status" style="margin-bottom:30px;"></div>
+
+  <!-- Quick Add placeholder (you don't have staff endpoints yet) -->
+  <fieldset>
+    <legend><strong>Quick Add Staff Member</strong></legend>
+    <p style="margin:0;color:#666;">
+      Staff add/edit endpoints aren’t built yet, so this section is disabled for now.
+      (We’ll add <code>POST /api/staff</code> and <code>PUT /api/staff/:id</code> after PD UI is stable.)
+    </p>
+  </fieldset>
+</form>
+
+<script>
+/* -------------------------
+   HELPERS
+------------------------- */
+function uniqSorted(arr) {
+  return [...new Set(arr.filter(Boolean))].sort((a,b) => String(a).localeCompare(String(b)));
+}
+
+function setStatus(msg, color) {
+  const el = document.getElementById("pd_status");
+  el.textContent = msg || "";
+  el.style.color = color || "black";
+}
+function updateSelectedCount() {
+  const checked = document.querySelectorAll(
+    "#pd_staffContainer input[type='checkbox']:checked"
+  ).length;
+
+  const el = document.getElementById("pd_selectedCount");
+  if (el) el.textContent = `Selected: ${checked}`;
+}
+
+/* -------------------------
+   AUTO-FILL END DATE
+------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  const start = document.getElementById("pd_startDate");
+  const end   = document.getElementById("pd_endDate");
+
+  start.addEventListener("change", () => {
+    if (start.value && (!end.value || end.value < start.value)) {
+      end.value = start.value;
+    }
+  });
+});
+
+/* -------------------------
+   GLOBAL DATA
+------------------------- */
+let GLOBAL = {
+  staff: [],
+  areas: [],   // [{AreaID, AreaName}]
+  sectors: [], // [{SectorID, SectorName}]
+  sites: []    // [{SiteID, SiteName}] used as venue text for now
+};
+
+/* -------------------------
+   FILTER CHECKBOX BUILDER
+------------------------- */
+function buildFilterCheckboxes(containerId, values) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  (values || []).forEach(v => {
+    const label = document.createElement("label");
+    label.className = "filter-checkbox";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = v;
+    cb.addEventListener("change", applyStaffFilters);
+
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(" " + v));
+    container.appendChild(label);
+  });
+}
+
+function getSelectedValues(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+}
+
+/* -------------------------
+   STAFF RENDER
+------------------------- */
+function renderStaffList() {
+  const container = document.getElementById("pd_staffContainer");
+  const loading = document.getElementById("pd_staffLoading");
+  if (loading) loading.remove();
+
+  if (!GLOBAL.staff.length) {
+    container.innerHTML = "<em>No staff found.</em>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  GLOBAL.staff.forEach((s, i) => {
+    const div = document.createElement("div");
+    div.className = "staff-item";
+
+    // datasets used for filtering
+    div.dataset.campuses = [s.Campus1, s.Campus2].filter(Boolean).join("|");
+    div.dataset.position = s.Position || "";
+    div.dataset.sector   = s.Sector || "";
+
+    const row = document.createElement("div");
+    row.className = "staff-item-main";
+
+    const id = "staff_" + i;
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.id = id;
+    cb.value = String(s.StaffID); // IMPORTANT: submit staffIds (ints), not names
+
+    const lab = document.createElement("label");
+    lab.setAttribute("for", id);
+    lab.textContent = s.Name;
+
+    row.appendChild(cb);
+    row.appendChild(lab);
+
+    const meta = [];
+    const campuses = [s.Campus1, s.Campus2].filter(Boolean);
+    if (campuses.length) meta.push(campuses.join(", "));
+    if (s.Position) meta.push(s.Position);
+    if (s.Sector) meta.push(s.Sector);
+
+    if (meta.length) {
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "staff-meta";
+      metaDiv.textContent = meta.join(" • ");
+      div.appendChild(row);
+      div.appendChild(metaDiv);
+    } else {
+      div.appendChild(row);
+    }
+
+    container.appendChild(div);
+  });
+
+  applyStaffFilters();
+}
+
+/* -------------------------
+   STAFF FILTERING
+------------------------- */
+function updateSelectAllState() {
+  const selectAll = document.getElementById("pd_selectAllStaff");
+  const items = [...document.querySelectorAll("#pd_staffContainer .staff-item")]
+    .filter(div => div.style.display !== "none");
+
+  if (items.length === 0) {
+    selectAll.checked = false;
+    selectAll.indeterminate = false;
+    return;
+  }
+
+  const boxes = items.map(i => i.querySelector("input[type='checkbox']"));
+  const checkedCount = boxes.filter(b => b.checked).length;
+
+  if (checkedCount === 0) {
+    selectAll.checked = false;
+    selectAll.indeterminate = false;
+  } else if (checkedCount === boxes.length) {
+    selectAll.checked = true;
+    selectAll.indeterminate = false;
+  } else {
+    selectAll.checked = false;
+    selectAll.indeterminate = true;
+  }
+}
+
+function applyStaffFilters() {
+  const search = document.getElementById("pd_staffSearch").value.toLowerCase();
+
+  const campusSelected   = getSelectedValues("pd_campusFilterGroup");
+  const positionSelected = getSelectedValues("pd_positionFilterGroup");
+  const sectorSelected   = getSelectedValues("pd_sectorFilterGroup");
+
+  document.querySelectorAll("#pd_staffContainer .staff-item").forEach(item => {
+    const name = item.querySelector("label").textContent.toLowerCase();
+    const campuses = (item.dataset.campuses || "").split("|").filter(Boolean);
+    const pos = item.dataset.position || "";
+    const sec = item.dataset.sector || "";
+
+    const matchesSearch = !search || name.includes(search);
+
+    const matchesCampus =
+      !campusSelected.length ||
+      campuses.some(c => campusSelected.includes(c));
+
+    const matchesPosition =
+      !positionSelected.length ||
+      positionSelected.includes(pos);
+
+    const matchesSector =
+      !sectorSelected.length ||
+      sectorSelected.includes(sec);
+
+    item.style.display = (matchesSearch && matchesCampus && matchesPosition && matchesSector) ? "" : "none";
+  });
+
+  updateSelectAllState();
+  updateSelectedCount();
+}
+
+/* Events */
+document.addEventListener("change", function(e) {
+  if (e.target.id === "pd_selectAllStaff") {
+    const checked = e.target.checked;
+    document.querySelectorAll("#pd_staffContainer .staff-item").forEach(div => {
+      if (div.style.display !== "none") {
+        div.querySelector("input[type='checkbox']").checked = checked;
+      }
+    });
+    updateSelectAllState();
+    updateSelectedCount();
+  }
+});
+
+document.getElementById("pd_staffSearch").addEventListener("input", applyStaffFilters);
+
+document.getElementById("pd_staffContainer").addEventListener("change", function(e) {
+  if (e.target && e.target.type === "checkbox") {
+    updateSelectAllState();
+    updateSelectedCount();
+  }
+});
+
+
+/* -------------------------
+   VENUE OTHER
+------------------------- */
+document.getElementById("pd_venue").addEventListener("change", function() {
+  const box = document.getElementById("pd_otherVenue");
+  box.style.display = this.value === "__OTHER__" ? "block" : "none";
+});
+
+/* -------------------------
+   INITIAL LOAD (from Node API)
+------------------------- */
+async function loadInitialData() {
+  try {
+    setStatus("Loading…", "black");
+
+    const [staffRes, lookupsRes] = await Promise.all([
+      fetch("/api/staff"),
+      fetch("/api/lookups")
+    ]);
+
+    const staffJson = await staffRes.json();
+    const lookupsJson = await lookupsRes.json();
+
+    if (!staffJson.ok) throw new Error(staffJson.error || "Failed to load staff.");
+    if (!lookupsJson.ok) throw new Error(lookupsJson.error || "Failed to load lookups.");
+
+    GLOBAL.staff = staffJson.staff || [];
+    GLOBAL.areas = lookupsJson.areas || [];
+    GLOBAL.sectors = lookupsJson.sectors || [];
+    GLOBAL.sites = lookupsJson.sites || [];
+
+    // Populate Area dropdown (value = AreaID)
+    const areaSel = document.getElementById("pd_area");
+    areaSel.innerHTML = '<option value="">Select Area</option>';
+    GLOBAL.areas.forEach(a => {
+      const opt = document.createElement("option");
+      opt.value = a.AreaID;
+      opt.textContent = a.AreaName;
+      areaSel.appendChild(opt);
+    });
+
+    // Venue dropdown: use Sites + Online + Other
+    // (Until Venue table exists, we store venue text into VenueOther and keep VenueID null)
+    const venueSel = document.getElementById("pd_venue");
+    venueSel.innerHTML = '<option value="">Select Venue</option>';
+
+    const venueNames = uniqSorted([
+      ...GLOBAL.sites.map(s => s.SiteName),
+      "Online"
+    ]);
+
+    venueNames.forEach(v => {
+      const opt = document.createElement("option");
+      opt.value = v;            // store text for now
+      opt.textContent = v;
+      venueSel.appendChild(opt);
+    });
+
+    const otherOpt = document.createElement("option");
+    otherOpt.value = "__OTHER__";
+    otherOpt.textContent = "Other venue";
+    venueSel.appendChild(otherOpt);
+
+    // Build filter checkbox lists from staff (same order as your existing app)
+    const campuses = uniqSorted(GLOBAL.staff.flatMap(s => [s.Campus1, s.Campus2]));
+    const positions = uniqSorted(GLOBAL.staff.map(s => s.Position));
+    const sectors = uniqSorted(GLOBAL.staff.map(s => s.Sector));
+
+    buildFilterCheckboxes("pd_campusFilterGroup", campuses);
+    buildFilterCheckboxes("pd_positionFilterGroup", positions);
+    buildFilterCheckboxes("pd_sectorFilterGroup", sectors);
+
+    // Render staff list
+    renderStaffList();
+
+    setStatus("", "black");
+  } catch (err) {
+    console.error(err);
+    setStatus("Load error: " + (err?.message || String(err)), "red");
+  }
+  updateSelectedCount();
+
+}
+
+document.addEventListener("DOMContentLoaded", loadInitialData);
+
+/* -------------------------
+   FORM SUBMIT (POST to /api/pdrecords)
+------------------------- */
+document.getElementById("pdForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const status = document.getElementById("pd_status");
+  const submitBtn = document.getElementById("pd_submitBtn");
+
+  if (!submitBtn.dataset.origText) submitBtn.dataset.origText = submitBtn.textContent;
+  if (!submitBtn.dataset.origBg) submitBtn.dataset.origBg = submitBtn.style.background || "#1976d2";
+
+  // Venue handling
+  const venueSel = document.getElementById("pd_venue");
+  let venueText = venueSel.value;
+
+  if (venueText === "__OTHER__") {
+    venueText = document.getElementById("pd_otherVenue").value.trim();
+    if (!venueText) {
+      setStatus("Please enter the other venue.", "red");
+      return;
+    }
+  }
+
+  // staff IDs
+  const staffIds = [...document.querySelectorAll("#pd_staffContainer input[type='checkbox']:checked")]
+    .map(cb => parseInt(cb.value, 10))
+    .filter(n => Number.isInteger(n));
+
+  if (!staffIds.length) {
+    setStatus("Please select at least one staff member.", "red");
+    return;
+  }
+
+  const payload = {
+    startDate: document.getElementById("pd_startDate").value,
+    endDate: document.getElementById("pd_endDate").value || null,
+    areaId: parseInt(document.getElementById("pd_area").value, 10),
+    title: document.getElementById("pd_title").value,
+    // Until Venue table is live: store venue as text
+    venueId: null,
+    venueOther: venueText,
+
+    hours: Number(document.getElementById("pd_hours").value),
+    crt: Number(document.getElementById("pd_crtCost").value || 0),
+    enrol: Number(document.getElementById("pd_enrolCost").value || 0),
+    other: Number(document.getElementById("pd_otherCost").value || 0),
+    isAccrual: document.getElementById("pd_accrual").checked,
+
+    staffIds
+  };
+
+  // UI submitting state
+  setStatus("Submitting…", "black");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting…";
+
+  try {
+    const res = await fetch("/api/pdrecords", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || "Insert failed.");
+
+    setStatus(`Saved. Inserted rows: ${json.insertedRows}`, "green");
+
+    // Reset form
+    document.getElementById("pdForm").reset();
+    document.getElementById("pd_otherVenue").style.display = "none";
+
+    // Success button state briefly
+    submitBtn.disabled = false;
+    submitBtn.textContent = "PD entry saved";
+    submitBtn.style.background = "#2e7d32";
+
+    setTimeout(() => {
+      submitBtn.textContent = submitBtn.dataset.origText || "Submit PD Entry";
+      submitBtn.style.background = submitBtn.dataset.origBg || "#1976d2";
+    }, 2000);
+
+  } catch (err) {
+    console.error(err);
+    setStatus("Error: " + (err?.message || String(err)), "red");
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = submitBtn.dataset.origText || "Submit PD Entry";
+    submitBtn.style.background = submitBtn.dataset.origBg || "#1976d2";
+  }
+});
+</script>
+
+</body>
+</html>
