@@ -2,135 +2,393 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>PD Tracker Admin Entry</title>
+  <title>Record Attendance</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 1000px;
-      margin: 20px auto;
-      padding: 16px;
-    }
-    h1 { margin-bottom: 10px; }
+<style>
+  :root{
+    --text:#111;
+    --muted:#666;
+    --border:#e6e6e6;
+    --border2:#d9d9d9;
+    --bg:#fff;
+    --subtle:#fcfcfc;
+    --primary:#1976d2;
+    --shadow:0 1px 2px rgba(0,0,0,0.05);
+    --shadowHover:0 10px 28px rgba(0,0,0,0.18);
+    --radius:12px;
+  }
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
+  body{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: var(--text);
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 16px;
+    background: var(--bg);
+  }
 
-    fieldset {
-      margin-bottom: 20px;
-      border-radius: 4px;
-      padding: 12px 16px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-      font-weight: 600;
-    }
-    input[type="text"],
-    input[type="number"],
-    input[type="date"],
-    select {
-      width: 100%;
-      padding: 6px 8px;
-      margin-top: 4px;
-      box-sizing: border-box;
-    }
-    .two-column {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    @media (max-width: 800px) {
-      .two-column { grid-template-columns: 1fr; }
-    }
+  h1{ margin: 0; }
 
-    .staff-container {
-      border: 1px solid #ccc;
-      background: #fafafa;
-      border-radius: 4px;
-      padding: 8px;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    .staff-item {
-      display: flex;
-      flex-direction: column;
-      margin: 2px 0;
-    }
-    .staff-item-main {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .staff-meta {
-      margin-left: 24px;
-      color: #555;
-      font-size: 0.85em;
-    }
+  .top-bar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
 
-    .filters-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 8px 16px;
-      margin-bottom: 8px;
-    }
+  /* Two columns (stretch to match heights of the two main cards only) */
+  .two-column{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .two-column > div{ display:flex; }
+  .two-column > div > fieldset{ width:100%; height:100%; }
 
-    .select-all-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 10px 0;
-    }
+  @media (max-width: 800px){
+    .two-column{ grid-template-columns: 1fr; }
+    .two-column > div{ display:block; }
+    .two-column > div > fieldset{ height:auto; }
+  }
 
-    .status {
-      margin-top: 12px;
-      font-weight: 600;
-    }
+  fieldset{
+    margin: 0 0 20px 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    padding: 14px 16px 16px 16px;
+    box-shadow: var(--shadow);
+  }
 
-    .staff-filter-label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 4px;
+  legend strong{ font-size: 1.05rem; }
+
+  label{
+    display:block;
+    margin-top: 10px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select{
+    width: 100%;
+    padding: 10px 10px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    outline: none;
+    background: #fff;
+  }
+
+  input[type="text"]:focus,
+  input[type="number"]:focus,
+  input[type="date"]:focus,
+  select:focus{
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(25,118,210,0.15);
+  }
+
+  .status{
+    margin-top: 12px;
+    font-weight: 600;
+  }
+
+  /* Filters */
+  .filters-stack{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .staff-filter-label{
+    font-weight: 700;
+    display:block;
+    margin-bottom: 6px;
+  }
+
+  .filter-group{
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: var(--subtle);
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  /* Base checkbox label */
+  .filter-checkbox{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin: 0;
+    font-size: 0.92em;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 6px 8px;
+    border-radius: 10px;
+  }
+
+  /* Chip hover feel */
+  #pd_sectorFilterGroup .filter-checkbox:hover,
+  #pd_campusFilterGroup .filter-checkbox:hover,
+  #pd_positionFilterGroup .filter-checkbox:hover{
+    border-color: rgba(25,118,210,0.35);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    transform: translateY(-1px);
+  }
+
+  /* Sector: one row, two equal chips */
+  #pd_sectorFilterGroup{
+    display:flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow: hidden;
+  }
+  #pd_sectorFilterGroup .filter-checkbox{
+    flex: 1 1 0;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  /* Campus: FORCE 2x3 chip grid (6 visible) */
+  #pd_campusFilterGroup{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    max-height: unset;
+    overflow: visible;
+  }
+  #pd_campusFilterGroup .filter-checkbox{
+    width: 100%;
+    justify-content:flex-start;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  @media (max-width: 900px){
+    #pd_campusFilterGroup{
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-    .filter-group {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      padding: 4px 6px;
-      max-height: 90px;
-      overflow-y: auto;
-      background: #fafafa;
-    }
-    .filter-checkbox {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      margin: 2px 6px 2px 0;
-      font-size: 0.85em;
-      font-weight: 400;
-    }
-  </style>
+  }
+
+  /* Position: chips evenly spread; horizontal scroll if lots */
+  #pd_positionFilterGroup{
+    display:flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: unset;
+    padding-bottom: 6px;
+  }
+  #pd_positionFilterGroup .filter-checkbox{
+    flex: 1 1 0;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  /* Two list layout */
+  .two-lists{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  @media (max-width: 900px){
+    .two-lists{ grid-template-columns: 1fr; }
+  }
+
+  .list-panel{
+    display:flex;
+    flex-direction:column;
+    gap: 6px;
+  }
+
+  .list-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding: 2px 4px;
+  }
+
+  .list-header strong{
+    font-size: 0.95rem;
+    color: #222;
+  }
+
+  .staff-container{
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--subtle);
+    box-shadow: var(--shadow);
+    padding: 10px;
+    max-height: 380px;
+    overflow-y: auto;
+  }
+
+  .staff-item{
+    display:flex;
+    flex-direction:column;
+    margin: 4px 0;
+    padding: 6px 6px;
+    border-radius: 10px;
+  }
+  .staff-item:hover{ background: #fff; }
+
+  .staff-item-main{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+
+  .staff-meta{
+    margin-left: 26px;
+    color: #555;
+    font-size: 0.85em;
+  }
+
+  .small-muted{
+    color: var(--muted);
+    font-size: 0.85em;
+    font-weight: 400;
+  }
+
+  .staff-actions-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 10px;
+    margin: 10px 0 6px 0;
+  }
+
+  .select-all-row{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .action-buttons{
+    display:flex;
+    gap: 8px;
+  }
+
+  .secondary-btn, .danger-btn{
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+
+  .secondary-btn{ background: #f5f5f5; }
+
+  .danger-btn{
+    background: #ffe5e5;
+    border-color: #ffb3b3;
+  }
+
+  .secondary-btn:hover, .danger-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  }
+
+  /* Selected list items */
+  .selected-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 8px;
+    padding: 6px 4px;
+    border-bottom: 1px solid #eee;
+  }
+
+  .selected-name{
+    display:flex;
+    flex-direction:column;
+    gap: 2px;
+  }
+
+  .remove-x{
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 10px;
+  }
+  .remove-x:hover{
+    background: rgba(0,0,0,0.05);
+  }
+
+  /* ✅ Space BEFORE the submit button (not at end of form) */
+  #pd_status{
+    margin-bottom: 24px;
+  }
+
+  /* Submit button polish */
+  #pd_submitBtn{
+    cursor: pointer; /* finger hover */
+    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+  }
+  #pd_submitBtn:hover{
+    transform: translateY(-1px);
+    box-shadow: var(--shadowHover);
+    filter: brightness(0.98);
+  }
+  #pd_submitBtn:active{
+    transform: translateY(0px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+  }
+  #pd_submitBtn:disabled{
+    cursor: not-allowed;
+    opacity: 0.75;
+    transform: none;
+    box-shadow: none;
+  }
+  .two-column{
+  margin-bottom: 28px;
+}
+
+#pd_submitBtn{
+  margin-top: 28px !important;
+  margin-bottom: 28px !important;
+}
+
+</style>
+
 </head>
 
 <body>
 
 <div class="top-bar">
-  <h1>PD Tracker Admin Entry</h1>
-  <!-- Placeholder for future Records Report page -->
+  <h1>Record Attendance</h1>
   <span style="font-size:0.9rem;color:#666;">(Records Report coming soon)</span>
 </div>
 
 <form id="pdForm">
   <div class="two-column">
 
-    <!-- LEFT COLUMN – PD DETAILS -->
+    <!-- LEFT COLUMN – DETAILS -->
     <div>
       <fieldset>
-        <legend><strong>Section 1 – PD Details</strong></legend>
+        <legend><strong>Details</strong></legend>
 
         <label for="pd_startDate">Start Date *</label>
         <input type="date" id="pd_startDate" required>
@@ -175,39 +433,64 @@
     <!-- RIGHT COLUMN – STAFF -->
     <div>
       <fieldset>
-        <legend><strong>Section 2 – Staff Attending</strong></legend>
-        <p>Select staff members attending this PD *</p>
+        <legend><strong>Select Staff for Attendance</strong></legend>
 
-        <!-- Keep order: Campus -> Position -> Sector -->
-        <div class="filters-row">
-          <div>
-            <span class="staff-filter-label">Campus</span>
-            <div id="pd_campusFilterGroup" class="filter-group"></div>
-          </div>
-          <div>
-            <span class="staff-filter-label">Position</span>
-            <div id="pd_positionFilterGroup" class="filter-group"></div>
-          </div>
+        <div class="filters-stack">
           <div>
             <span class="staff-filter-label">Sector</span>
             <div id="pd_sectorFilterGroup" class="filter-group"></div>
+          </div>
+
+          <div>
+            <span class="staff-filter-label">Campus</span>
+            <div id="pd_campusFilterGroup" class="filter-group grid-2x3"></div>
+          </div>
+
+          <div>
+            <span class="staff-filter-label">Position</span>
+            <div id="pd_positionFilterGroup" class="filter-group row-1"></div>
           </div>
         </div>
 
         <label>Search staff</label>
         <input type="text" id="pd_staffSearch" placeholder="Type to filter staff list…">
-<div id="pd_selectedCount" style="margin:6px 0; font-weight:600;">
-  Selected: 0
-</div>
 
-        <div class="select-all-row">
-          <input type="checkbox" id="pd_selectAllStaff">
-          <label for="pd_selectAllStaff" style="font-weight:400;">Select all (filtered)</label>
+        <div id="pd_selectedCount" style="margin:6px 0; font-weight:600;">
+          Selected: 0
         </div>
 
-        <div id="pd_staffContainer" class="staff-container">
-          <p id="pd_staffLoading">Loading staff…</p>
+        <div class="staff-actions-row">
+          <div class="select-all-row">
+            <input type="checkbox" id="pd_selectAllStaff">
+            <label for="pd_selectAllStaff" style="font-weight:400;">Select all (filtered)</label>
+          </div>
+
+          <div class="action-buttons">
+            <button type="button" id="pd_clearFiltersBtn" class="secondary-btn">Clear filters</button>
+            <button type="button" id="pd_removeAllSelectedBtn" class="danger-btn">Remove all</button>
+          </div>
         </div>
+
+        <div class="two-lists">
+          <div class="list-panel">
+            <div class="list-header">
+              <strong id="pd_availableHeader">Available (0)</strong>
+            </div>
+            <div id="pd_availableContainer" class="staff-container">
+              <p id="pd_staffLoading">Loading staff…</p>
+            </div>
+          </div>
+
+          <div class="list-panel">
+            <div class="list-header">
+              <strong id="pd_selectedHeader">Selected (0)</strong>
+            </div>
+            <div id="pd_selectedContainer" class="staff-container">
+              <em>No staff selected.</em>
+            </div>
+          </div>
+        </div>
+
       </fieldset>
     </div>
 
@@ -231,7 +514,6 @@
 
   <div id="pd_status" class="status" style="margin-bottom:30px;"></div>
 
-  <!-- Quick Add placeholder (you don't have staff endpoints yet) -->
   <fieldset>
     <legend><strong>Quick Add Staff Member</strong></legend>
     <p style="margin:0;color:#666;">
@@ -254,14 +536,6 @@ function setStatus(msg, color) {
   el.textContent = msg || "";
   el.style.color = color || "black";
 }
-function updateSelectedCount() {
-  const checked = document.querySelectorAll(
-    "#pd_staffContainer input[type='checkbox']:checked"
-  ).length;
-
-  const el = document.getElementById("pd_selectedCount");
-  if (el) el.textContent = `Selected: ${checked}`;
-}
 
 /* -------------------------
    AUTO-FILL END DATE
@@ -282,10 +556,18 @@ document.addEventListener("DOMContentLoaded", () => {
 ------------------------- */
 let GLOBAL = {
   staff: [],
-  areas: [],   // [{AreaID, AreaName}]
-  sectors: [], // [{SectorID, SectorName}]
-  sites: []    // [{SiteID, SiteName}] used as venue text for now
+  areas: [],
+  sectors: [],
+  sites: []
 };
+
+// Stable selection state (independent of filtering)
+const SELECTED = new Map(); // StaffID -> staff object
+
+function updateSelectedCount() {
+  const el = document.getElementById("pd_selectedCount");
+  if (el) el.textContent = `Selected: ${SELECTED.size}`;
+}
 
 /* -------------------------
    FILTER CHECKBOX BUILDER
@@ -317,13 +599,15 @@ function getSelectedValues(containerId) {
 /* -------------------------
    STAFF RENDER
 ------------------------- */
-function renderStaffList() {
-  const container = document.getElementById("pd_staffContainer");
+function renderAvailableList() {
+  const container = document.getElementById("pd_availableContainer");
   const loading = document.getElementById("pd_staffLoading");
   if (loading) loading.remove();
 
   if (!GLOBAL.staff.length) {
     container.innerHTML = "<em>No staff found.</em>";
+    updateHeaders();
+    updateSelectAllState();
     return;
   }
 
@@ -333,20 +617,31 @@ function renderStaffList() {
     const div = document.createElement("div");
     div.className = "staff-item";
 
-    // datasets used for filtering
     div.dataset.campuses = [s.Campus1, s.Campus2].filter(Boolean).join("|");
     div.dataset.position = s.Position || "";
     div.dataset.sector   = s.Sector || "";
+    div.dataset.name     = (s.Name || "").toLowerCase();
 
     const row = document.createElement("div");
     row.className = "staff-item-main";
 
-    const id = "staff_" + i;
+    const id = "avail_staff_" + i;
 
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.id = id;
-    cb.value = String(s.StaffID); // IMPORTANT: submit staffIds (ints), not names
+    cb.value = String(s.StaffID);
+    cb.checked = SELECTED.has(s.StaffID);
+
+    cb.addEventListener("change", () => {
+      const staffId = s.StaffID;
+      if (cb.checked) SELECTED.set(staffId, s);
+      else SELECTED.delete(staffId);
+
+      renderSelectedList();
+      updateHeaders();
+      updateSelectAllState();
+    });
 
     const lab = document.createElement("label");
     lab.setAttribute("for", id);
@@ -377,21 +672,86 @@ function renderStaffList() {
   applyStaffFilters();
 }
 
+function renderSelectedList() {
+  const container = document.getElementById("pd_selectedContainer");
+
+  const selectedArr = Array.from(SELECTED.values())
+    .sort((a, b) => String(a.Name).localeCompare(String(b.Name)));
+
+  if (selectedArr.length === 0) {
+    container.innerHTML = "<em>No staff selected.</em>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  selectedArr.forEach((s) => {
+    const row = document.createElement("div");
+    row.className = "selected-item";
+
+    const left = document.createElement("div");
+    left.className = "selected-name";
+
+    const name = document.createElement("div");
+    name.textContent = s.Name;
+
+    const meta = [];
+    const campuses = [s.Campus1, s.Campus2].filter(Boolean);
+    if (campuses.length) meta.push(campuses.join(", "));
+    if (s.Position) meta.push(s.Position);
+    if (s.Sector) meta.push(s.Sector);
+
+    left.appendChild(name);
+    if (meta.length) {
+      const metaDiv = document.createElement("div");
+      metaDiv.className = "small-muted";
+      metaDiv.textContent = meta.join(" • ");
+      left.appendChild(metaDiv);
+    }
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "remove-x";
+    btn.title = "Remove";
+    btn.textContent = "×";
+
+    btn.addEventListener("click", () => {
+      SELECTED.delete(s.StaffID);
+
+      const avail = document.getElementById("pd_availableContainer");
+      const cb = avail.querySelector(`input[type="checkbox"][value="${s.StaffID}"]`);
+      if (cb) cb.checked = false;
+
+      renderSelectedList();
+      updateHeaders();
+      updateSelectAllState();
+    });
+
+    row.appendChild(left);
+    row.appendChild(btn);
+    container.appendChild(row);
+  });
+}
+
 /* -------------------------
    STAFF FILTERING
 ------------------------- */
+function getVisibleAvailableCheckboxes() {
+  return [...document.querySelectorAll("#pd_availableContainer .staff-item")]
+    .filter(div => div.style.display !== "none")
+    .map(div => div.querySelector("input[type='checkbox']"));
+}
+
 function updateSelectAllState() {
   const selectAll = document.getElementById("pd_selectAllStaff");
-  const items = [...document.querySelectorAll("#pd_staffContainer .staff-item")]
-    .filter(div => div.style.display !== "none");
+  const boxes = getVisibleAvailableCheckboxes();
 
-  if (items.length === 0) {
+  if (boxes.length === 0) {
     selectAll.checked = false;
     selectAll.indeterminate = false;
     return;
   }
 
-  const boxes = items.map(i => i.querySelector("input[type='checkbox']"));
   const checkedCount = boxes.filter(b => b.checked).length;
 
   if (checkedCount === 0) {
@@ -409,17 +769,23 @@ function updateSelectAllState() {
 function applyStaffFilters() {
   const search = document.getElementById("pd_staffSearch").value.toLowerCase();
 
+  const sectorSelected   = getSelectedValues("pd_sectorFilterGroup");
   const campusSelected   = getSelectedValues("pd_campusFilterGroup");
   const positionSelected = getSelectedValues("pd_positionFilterGroup");
-  const sectorSelected   = getSelectedValues("pd_sectorFilterGroup");
 
-  document.querySelectorAll("#pd_staffContainer .staff-item").forEach(item => {
-    const name = item.querySelector("label").textContent.toLowerCase();
+  const items = document.querySelectorAll("#pd_availableContainer .staff-item");
+
+  items.forEach(item => {
+    const name = item.dataset.name || "";
     const campuses = (item.dataset.campuses || "").split("|").filter(Boolean);
     const pos = item.dataset.position || "";
     const sec = item.dataset.sector || "";
 
     const matchesSearch = !search || name.includes(search);
+
+    const matchesSector =
+      !sectorSelected.length ||
+      sectorSelected.includes(sec);
 
     const matchesCampus =
       !campusSelected.length ||
@@ -429,40 +795,73 @@ function applyStaffFilters() {
       !positionSelected.length ||
       positionSelected.includes(pos);
 
-    const matchesSector =
-      !sectorSelected.length ||
-      sectorSelected.includes(sec);
-
-    item.style.display = (matchesSearch && matchesCampus && matchesPosition && matchesSector) ? "" : "none";
+    item.style.display = (matchesSearch && matchesSector && matchesCampus && matchesPosition) ? "" : "none";
   });
 
+  updateHeaders();
   updateSelectAllState();
+}
+
+function updateHeaders() {
+  const availableBoxes = getVisibleAvailableCheckboxes();
+  const availableCount = availableBoxes.length;
+  const selectedCount = SELECTED.size;
+
+  const availHeader = document.getElementById("pd_availableHeader");
+  const selHeader = document.getElementById("pd_selectedHeader");
+
+  if (availHeader) availHeader.textContent = `Available (${availableCount})`;
+  if (selHeader) selHeader.textContent = `Selected (${selectedCount})`;
+
   updateSelectedCount();
 }
 
-/* Events */
+/* -------------------------
+   EVENTS
+------------------------- */
 document.addEventListener("change", function(e) {
   if (e.target.id === "pd_selectAllStaff") {
     const checked = e.target.checked;
-    document.querySelectorAll("#pd_staffContainer .staff-item").forEach(div => {
-      if (div.style.display !== "none") {
-        div.querySelector("input[type='checkbox']").checked = checked;
-      }
+    const boxes = getVisibleAvailableCheckboxes();
+
+    boxes.forEach(cb => {
+      cb.checked = checked;
+
+      const staffId = parseInt(cb.value, 10);
+      const staffObj = GLOBAL.staff.find(s => s.StaffID === staffId);
+      if (!staffObj) return;
+
+      if (checked) SELECTED.set(staffId, staffObj);
+      else SELECTED.delete(staffId);
     });
+
+    renderSelectedList();
+    updateHeaders();
     updateSelectAllState();
-    updateSelectedCount();
   }
+});
+
+document.getElementById("pd_clearFiltersBtn").addEventListener("click", () => {
+  document.getElementById("pd_staffSearch").value = "";
+
+  ["pd_sectorFilterGroup", "pd_campusFilterGroup", "pd_positionFilterGroup"].forEach(id => {
+    const group = document.getElementById(id);
+    group.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+  });
+
+  applyStaffFilters();
+});
+
+document.getElementById("pd_removeAllSelectedBtn").addEventListener("click", () => {
+  SELECTED.clear();
+  document.querySelectorAll("#pd_availableContainer input[type='checkbox']").forEach(cb => cb.checked = false);
+
+  renderSelectedList();
+  updateHeaders();
+  updateSelectAllState();
 });
 
 document.getElementById("pd_staffSearch").addEventListener("input", applyStaffFilters);
-
-document.getElementById("pd_staffContainer").addEventListener("change", function(e) {
-  if (e.target && e.target.type === "checkbox") {
-    updateSelectAllState();
-    updateSelectedCount();
-  }
-});
-
 
 /* -------------------------
    VENUE OTHER
@@ -473,7 +872,7 @@ document.getElementById("pd_venue").addEventListener("change", function() {
 });
 
 /* -------------------------
-   INITIAL LOAD (from Node API)
+   INITIAL LOAD
 ------------------------- */
 async function loadInitialData() {
   try {
@@ -495,7 +894,7 @@ async function loadInitialData() {
     GLOBAL.sectors = lookupsJson.sectors || [];
     GLOBAL.sites = lookupsJson.sites || [];
 
-    // Populate Area dropdown (value = AreaID)
+    // Area dropdown
     const areaSel = document.getElementById("pd_area");
     areaSel.innerHTML = '<option value="">Select Area</option>';
     GLOBAL.areas.forEach(a => {
@@ -505,8 +904,7 @@ async function loadInitialData() {
       areaSel.appendChild(opt);
     });
 
-    // Venue dropdown: use Sites + Online + Other
-    // (Until Venue table exists, we store venue text into VenueOther and keep VenueID null)
+    // Venue dropdown (text-based for now)
     const venueSel = document.getElementById("pd_venue");
     venueSel.innerHTML = '<option value="">Select Venue</option>';
 
@@ -517,7 +915,7 @@ async function loadInitialData() {
 
     venueNames.forEach(v => {
       const opt = document.createElement("option");
-      opt.value = v;            // store text for now
+      opt.value = v;
       opt.textContent = v;
       venueSel.appendChild(opt);
     });
@@ -527,36 +925,35 @@ async function loadInitialData() {
     otherOpt.textContent = "Other venue";
     venueSel.appendChild(otherOpt);
 
-    // Build filter checkbox lists from staff (same order as your existing app)
+    // Filters
+    const sectors = uniqSorted(GLOBAL.staff.map(s => s.Sector));
     const campuses = uniqSorted(GLOBAL.staff.flatMap(s => [s.Campus1, s.Campus2]));
     const positions = uniqSorted(GLOBAL.staff.map(s => s.Position));
-    const sectors = uniqSorted(GLOBAL.staff.map(s => s.Sector));
 
+    buildFilterCheckboxes("pd_sectorFilterGroup", sectors);
     buildFilterCheckboxes("pd_campusFilterGroup", campuses);
     buildFilterCheckboxes("pd_positionFilterGroup", positions);
-    buildFilterCheckboxes("pd_sectorFilterGroup", sectors);
 
-    // Render staff list
-    renderStaffList();
+    renderAvailableList();
+    renderSelectedList();
+    updateHeaders();
+    updateSelectAllState();
 
     setStatus("", "black");
   } catch (err) {
     console.error(err);
     setStatus("Load error: " + (err?.message || String(err)), "red");
   }
-  updateSelectedCount();
-
 }
 
 document.addEventListener("DOMContentLoaded", loadInitialData);
 
 /* -------------------------
-   FORM SUBMIT (POST to /api/pdrecords)
+   FORM SUBMIT
 ------------------------- */
 document.getElementById("pdForm").addEventListener("submit", async function(e) {
   e.preventDefault();
 
-  const status = document.getElementById("pd_status");
   const submitBtn = document.getElementById("pd_submitBtn");
 
   if (!submitBtn.dataset.origText) submitBtn.dataset.origText = submitBtn.textContent;
@@ -574,11 +971,7 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
     }
   }
 
-  // staff IDs
-  const staffIds = [...document.querySelectorAll("#pd_staffContainer input[type='checkbox']:checked")]
-    .map(cb => parseInt(cb.value, 10))
-    .filter(n => Number.isInteger(n));
-
+  const staffIds = Array.from(SELECTED.keys());
   if (!staffIds.length) {
     setStatus("Please select at least one staff member.", "red");
     return;
@@ -589,20 +982,16 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
     endDate: document.getElementById("pd_endDate").value || null,
     areaId: parseInt(document.getElementById("pd_area").value, 10),
     title: document.getElementById("pd_title").value,
-    // Until Venue table is live: store venue as text
     venueId: null,
     venueOther: venueText,
-
     hours: Number(document.getElementById("pd_hours").value),
     crt: Number(document.getElementById("pd_crtCost").value || 0),
     enrol: Number(document.getElementById("pd_enrolCost").value || 0),
     other: Number(document.getElementById("pd_otherCost").value || 0),
     isAccrual: document.getElementById("pd_accrual").checked,
-
     staffIds
   };
 
-  // UI submitting state
   setStatus("Submitting…", "black");
   submitBtn.disabled = true;
   submitBtn.textContent = "Submitting…";
@@ -619,11 +1008,16 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
 
     setStatus(`Saved. Inserted rows: ${json.insertedRows}`, "green");
 
-    // Reset form
+    // Reset form + selection state
     document.getElementById("pdForm").reset();
     document.getElementById("pd_otherVenue").style.display = "none";
 
-    // Success button state briefly
+    SELECTED.clear();
+    renderSelectedList();
+    renderAvailableList();
+    updateHeaders();
+    updateSelectAllState();
+
     submitBtn.disabled = false;
     submitBtn.textContent = "PD entry saved";
     submitBtn.style.background = "#2e7d32";
