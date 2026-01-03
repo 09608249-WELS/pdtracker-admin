@@ -18,6 +18,9 @@
     --radius:12px;
   }
 
+  /* ✅ bulletproof hidden handling */
+  [hidden]{ display:none !important; }
+
   body{
     font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     color: var(--text);
@@ -363,14 +366,83 @@
     box-shadow: none;
   }
   .two-column{
-  margin-bottom: 28px;
-}
+    margin-bottom: 28px;
+  }
 
-#pd_submitBtn{
-  margin-top: 28px !important;
-  margin-bottom: 28px !important;
-}
+  #pd_submitBtn{
+    margin-top: 28px !important;
+    margin-bottom: 28px !important;
+  }
 
+  /* Campus: prevent chips overflowing the group */
+  #pd_campusFilterGroup{
+    overflow: hidden;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  #pd_campusFilterGroup .filter-checkbox{
+    min-width: 0;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* =========================================================
+     MODE TABS + RECORDS MODE STYLES
+     ========================================================= */
+
+  .tabs { display:flex; gap:8px; margin: 0 0 14px; flex-wrap:wrap; }
+  .tab { padding:10px 12px; border-radius:12px; border:1px solid var(--border2); background:#fff; font-weight:700; cursor:pointer; }
+  .tab.active { border-color: var(--primary); }
+  .tab:disabled { opacity:0.5; cursor:not-allowed; }
+
+  .mode-panel { margin-top: 10px; }
+
+  .card { border:1px solid var(--border); border-radius:14px; padding:14px; background:#fff; margin-bottom:14px; box-shadow: var(--shadow); }
+  .card-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .card-actions button { padding:8px 10px; border-radius:10px; border:1px solid var(--border2); background:#fff; cursor:pointer; }
+
+  .filters { display:grid; grid-template-columns: repeat(6, minmax(140px, 1fr)); gap:10px; margin-top:10px; align-items:end; }
+  .filter-wide { grid-column: span 2; }
+  .filter-actions { display:flex; gap:10px; align-items:end; justify-content:flex-end; }
+
+  .table-wrap { overflow:auto; }
+  .grid { width:100%; border-collapse:collapse; }
+  .grid th, .grid td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; }
+  .grid th { text-align:left; font-weight:800; }
+  .grid td.num, .grid th.num { text-align:right; }
+  .grid .rowbtn { padding:8px 10px; border-radius:10px; border:1px solid var(--border2); background:#fff; cursor:pointer; position:relative; z-index:1; }
+
+  .pager { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
+  .pager-buttons { display:flex; gap:10px; }
+
+  .modal { position:fixed; inset:0; display:grid; place-items:center; z-index:50; }
+  .modal[hidden] { display:none !important; }
+  /* ✅ prevent invisible modal/backdrop blocking clicks */
+  .modal[hidden], .modal[hidden] * { pointer-events:none !important; }
+
+  .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.35); }
+  .modal-card { position:relative; width:min(760px, calc(100vw - 24px)); background:#fff; border-radius:16px; border:1px solid var(--border); overflow:hidden; }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #eee; }
+  .modal-body { padding:14px; display:grid; gap:10px; }
+  .modal-footer { display:flex; gap:10px; padding:12px 14px; border-top:1px solid #eee; }
+  .icon-btn { border:1px solid var(--border2); background:#fff; border-radius:10px; padding:6px 10px; cursor:pointer; }
+  .danger { border:1px solid #c62828; color:#c62828; background:#fff; }
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .status { min-height: 18px; font-size: 13px; opacity: 0.85; }
+
+  @media (max-width: 900px){
+    .filters{ grid-template-columns:1fr 1fr; }
+    .filter-wide{ grid-column: span 2; }
+    .filter-actions{ justify-content:stretch; }
+    .two-col{ grid-template-columns:1fr; }
+  }
+
+  /* ===== Debug click probe (toggle with Ctrl+Alt+D) ===== */
+  body.debug-click * { outline: 1px dashed rgba(25,118,210,0.35); }
+  #modeStatus { font-size: 0.9rem; color:#666; }
 </style>
 
 </head>
@@ -378,150 +450,338 @@
 <body>
 
 <div class="top-bar">
-  <h1>Record Attendance</h1>
+  <div>
+    <h1>Record Attendance</h1>
+    <div id="modeStatus">(mode: entry)</div>
+  </div>
   <span style="font-size:0.9rem;color:#666;">(Records Report coming soon)</span>
 </div>
 
+<nav class="tabs">
+  <button class="tab" data-mode="entry" type="button">Entry</button>
+  <button class="tab" data-mode="records" type="button">Records</button>
+  <button class="tab" data-mode="accrual" type="button" disabled>Accrual</button>
+  <button class="tab" data-mode="staff" type="button" disabled>Staff</button>
+</nav>
+
 <form id="pdForm">
-  <div class="two-column">
+  <section id="mode-entry" class="mode-panel">
+    <div class="two-column">
 
-    <!-- LEFT COLUMN – DETAILS -->
-    <div>
-      <fieldset>
-        <legend><strong>Details</strong></legend>
+      <div>
+        <fieldset>
+          <legend><strong>Details</strong></legend>
 
-        <label for="pd_startDate">Start Date *</label>
-        <input type="date" id="pd_startDate" required>
+          <label for="pd_startDate">Start Date *</label>
+          <input type="date" id="pd_startDate" required>
 
-        <label for="pd_endDate">End Date</label>
-        <input type="date" id="pd_endDate">
+          <label for="pd_endDate">End Date</label>
+          <input type="date" id="pd_endDate">
 
-        <label for="pd_area">Area *</label>
-        <select id="pd_area" required>
-          <option value="">Select Area</option>
-        </select>
+          <label for="pd_area">Area *</label>
+          <select id="pd_area" required>
+            <option value="">Select Area</option>
+          </select>
 
-        <label for="pd_venue">Venue *</label>
-        <select id="pd_venue" required>
-          <option value="">Select Venue</option>
-        </select>
-        <input type="text" id="pd_otherVenue" placeholder="Enter other venue"
-               style="display:none; margin-top:4px;">
+          <label for="pd_venue">Venue *</label>
+          <select id="pd_venue" required>
+            <option value="">Select Venue</option>
+          </select>
+          <input type="text" id="pd_otherVenue" placeholder="Enter other venue"
+                 style="display:none; margin-top:4px;">
 
-        <label for="pd_title">Title *</label>
-        <input type="text" id="pd_title" required>
+          <label for="pd_title">Title *</label>
+          <input type="text" id="pd_title" required>
 
-        <label for="pd_hours">Hours *</label>
-        <input type="number" id="pd_hours" min="0" step="0.5" required>
+          <label for="pd_hours">Hours *</label>
+          <input type="number" id="pd_hours" min="0" step="0.5" required>
 
-        <label>
-          <input type="checkbox" id="pd_accrual">
-          Accrual (store hours)
-        </label>
+          <label>
+            <input type="checkbox" id="pd_accrual">
+            Accrual (store hours)
+          </label>
 
-        <label for="pd_crtCost">CRT Cost</label>
-        <input type="number" id="pd_crtCost" min="0" step="0.01">
+          <label for="pd_crtCost">CRT Cost</label>
+          <input type="number" id="pd_crtCost" min="0" step="0.01">
 
-        <label for="pd_enrolCost">Enrol Cost</label>
-        <input type="number" id="pd_enrolCost" min="0" step="0.01">
+          <label for="pd_enrolCost">Enrol Cost</label>
+          <input type="number" id="pd_enrolCost" min="0" step="0.01">
 
-        <label for="pd_otherCost">Other Cost</label>
-        <input type="number" id="pd_otherCost" min="0" step="0.01">
-      </fieldset>
+          <label for="pd_otherCost">Other Cost</label>
+          <input type="number" id="pd_otherCost" min="0" step="0.01">
+        </fieldset>
+      </div>
+
+      <div>
+        <fieldset>
+          <legend><strong>Select Staff for Attendance</strong></legend>
+
+          <div class="filters-stack">
+            <div>
+              <span class="staff-filter-label">Sector</span>
+              <div id="pd_sectorFilterGroup" class="filter-group"></div>
+            </div>
+
+            <div>
+              <span class="staff-filter-label">Campus</span>
+              <div id="pd_campusFilterGroup" class="filter-group grid-2x3"></div>
+            </div>
+
+            <div>
+              <span class="staff-filter-label">Position</span>
+              <div id="pd_positionFilterGroup" class="filter-group row-1"></div>
+            </div>
+          </div>
+
+          <label>Search staff</label>
+          <input type="text" id="pd_staffSearch" placeholder="Type to filter staff list…">
+
+          <div id="pd_selectedCount" style="margin:6px 0; font-weight:600;">
+            Selected: 0
+          </div>
+
+          <div class="staff-actions-row">
+            <div class="select-all-row">
+              <input type="checkbox" id="pd_selectAllStaff">
+              <label for="pd_selectAllStaff" style="font-weight:400;">Select all (filtered)</label>
+            </div>
+
+            <div class="action-buttons">
+              <button type="button" id="pd_clearFiltersBtn" class="secondary-btn">Clear filters</button>
+              <button type="button" id="pd_removeAllSelectedBtn" class="danger-btn">Remove all</button>
+            </div>
+          </div>
+
+          <div class="two-lists">
+            <div class="list-panel">
+              <div class="list-header">
+                <strong id="pd_availableHeader">Available (0)</strong>
+              </div>
+              <div id="pd_availableContainer" class="staff-container">
+                <p id="pd_staffLoading">Loading staff…</p>
+              </div>
+            </div>
+
+            <div class="list-panel">
+              <div class="list-header">
+                <strong id="pd_selectedHeader">Selected (0)</strong>
+              </div>
+              <div id="pd_selectedContainer" class="staff-container">
+                <em>No staff selected.</em>
+              </div>
+            </div>
+          </div>
+
+        </fieldset>
+      </div>
+
     </div>
 
-    <!-- RIGHT COLUMN – STAFF -->
-    <div>
-      <fieldset>
-        <legend><strong>Select Staff for Attendance</strong></legend>
+    <button
+      type="submit"
+      id="pd_submitBtn"
+      style="margin:20px 0 40px 0;
+             padding:18px;
+             width:100%;
+             font-size:1.3rem;
+             border-radius:10px;
+             font-weight:700;
+             background:#1976d2;
+             color:#fff;
+             border:none;"
+    >
+      Submit PD Entry
+    </button>
 
-        <div class="filters-stack">
-          <div>
-            <span class="staff-filter-label">Sector</span>
-            <div id="pd_sectorFilterGroup" class="filter-group"></div>
-          </div>
+    <div id="pd_status" class="status" style="margin-bottom:30px;"></div>
 
-          <div>
-            <span class="staff-filter-label">Campus</span>
-            <div id="pd_campusFilterGroup" class="filter-group grid-2x3"></div>
-          </div>
+    <fieldset>
+      <legend><strong>Quick Add Staff Member</strong></legend>
+      <p style="margin:0;color:#666;">
+        Staff add/edit endpoints aren’t built yet, so this section is disabled for now.
+        (We’ll add <code>POST /api/staff</code> and <code>PUT /api/staff/:id</code> after PD UI is stable.)
+      </p>
+    </fieldset>
+  </section>
+</form>
 
-          <div>
-            <span class="staff-filter-label">Position</span>
-            <div id="pd_positionFilterGroup" class="filter-group row-1"></div>
-          </div>
-        </div>
-
-        <label>Search staff</label>
-        <input type="text" id="pd_staffSearch" placeholder="Type to filter staff list…">
-
-        <div id="pd_selectedCount" style="margin:6px 0; font-weight:600;">
-          Selected: 0
-        </div>
-
-        <div class="staff-actions-row">
-          <div class="select-all-row">
-            <input type="checkbox" id="pd_selectAllStaff">
-            <label for="pd_selectAllStaff" style="font-weight:400;">Select all (filtered)</label>
-          </div>
-
-          <div class="action-buttons">
-            <button type="button" id="pd_clearFiltersBtn" class="secondary-btn">Clear filters</button>
-            <button type="button" id="pd_removeAllSelectedBtn" class="danger-btn">Remove all</button>
-          </div>
-        </div>
-
-        <div class="two-lists">
-          <div class="list-panel">
-            <div class="list-header">
-              <strong id="pd_availableHeader">Available (0)</strong>
-            </div>
-            <div id="pd_availableContainer" class="staff-container">
-              <p id="pd_staffLoading">Loading staff…</p>
-            </div>
-          </div>
-
-          <div class="list-panel">
-            <div class="list-header">
-              <strong id="pd_selectedHeader">Selected (0)</strong>
-            </div>
-            <div id="pd_selectedContainer" class="staff-container">
-              <em>No staff selected.</em>
-            </div>
-          </div>
-        </div>
-
-      </fieldset>
+<section id="mode-records" class="mode-panel" hidden>
+  <div class="card">
+    <div class="card-header">
+      <h2 style="margin:0;">Records</h2>
+      <div class="card-actions">
+        <button id="rec_exportCsvBtn" type="button">Export CSV</button>
+      </div>
     </div>
 
+    <div class="filters">
+      <div>
+        <label>From</label>
+        <input type="date" id="rec_from">
+      </div>
+      <div>
+        <label>To</label>
+        <input type="date" id="rec_to">
+      </div>
+
+      <div>
+        <label>Staff</label>
+        <select id="rec_staff">
+          <option value="">All staff</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Area</label>
+        <select id="rec_area">
+          <option value="">All areas</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Venue</label>
+        <select id="rec_venue">
+          <option value="">All venues</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Accrual</label>
+        <select id="rec_accrual">
+          <option value="">All</option>
+          <option value="1">Accrual only</option>
+          <option value="0">Non-accrual</option>
+        </select>
+      </div>
+
+      <div class="filter-wide">
+        <label>Search title</label>
+        <input type="text" id="rec_q" placeholder="e.g. Sounds-Write">
+      </div>
+
+      <div class="filter-actions">
+        <button id="rec_applyBtn" type="button">Apply</button>
+        <button id="rec_clearBtn" type="button">Clear</button>
+      </div>
+    </div>
   </div>
 
-  <button
-    type="submit"
-    id="pd_submitBtn"
-    style="margin:20px 0 40px 0;
-           padding:18px;
-           width:100%;
-           font-size:1.3rem;
-           border-radius:10px;
-           font-weight:700;
-           background:#1976d2;
-           color:#fff;
-           border:none;"
-  >
-    Submit PD Entry
-  </button>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="grid" id="rec_table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Staff</th>
+            <th>Area</th>
+            <th>Venue</th>
+            <th>Title</th>
+            <th class="num">Hours</th>
+            <th class="num">Total</th>
+            <th>Accrual</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rec_tbody">
+          <tr><td colspan="9"><em>Run a search…</em></td></tr>
+        </tbody>
+      </table>
+    </div>
 
-  <div id="pd_status" class="status" style="margin-bottom:30px;"></div>
+    <div class="pager">
+      <div id="rec_pagerInfo"></div>
+      <div class="pager-buttons">
+        <button id="rec_prevBtn" type="button">Prev</button>
+        <button id="rec_nextBtn" type="button">Next</button>
+      </div>
+    </div>
+  </div>
 
-  <fieldset>
-    <legend><strong>Quick Add Staff Member</strong></legend>
-    <p style="margin:0;color:#666;">
-      Staff add/edit endpoints aren’t built yet, so this section is disabled for now.
-      (We’ll add <code>POST /api/staff</code> and <code>PUT /api/staff/:id</code> after PD UI is stable.)
-    </p>
-  </fieldset>
-</form>
+  <div class="modal" id="rec_modal" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="margin:0;">Edit PD Record</h3>
+        <button class="icon-btn" data-close="1" type="button">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="rec_edit_id">
+
+        <div class="two-col">
+          <div>
+            <label>Start Date</label>
+            <input type="date" id="rec_edit_start">
+          </div>
+          <div>
+            <label>End Date</label>
+            <input type="date" id="rec_edit_end">
+          </div>
+        </div>
+
+        <label>Area</label>
+        <select id="rec_edit_area"></select>
+
+        <label>Venue</label>
+        <select id="rec_edit_venue">
+          <option value="">Other (type below)</option>
+        </select>
+
+        <label>Venue (Other)</label>
+        <input type="text" id="rec_edit_venueOther" placeholder="Only used if Venue is set to Other">
+
+        <label>Title</label>
+        <input type="text" id="rec_edit_title">
+
+        <div class="two-col">
+          <div>
+            <label>Hours</label>
+            <input type="number" step="0.5" min="0" id="rec_edit_hours">
+          </div>
+          <div>
+            <label>Accrual</label>
+            <select id="rec_edit_accrual">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <label>CRT</label>
+            <input type="number" step="0.01" min="0" id="rec_edit_crt">
+          </div>
+          <div>
+            <label>Enrol</label>
+            <input type="number" step="0.01" min="0" id="rec_edit_enrol">
+          </div>
+        </div>
+
+        <label>Other</label>
+        <input type="number" step="0.01" min="0" id="rec_edit_other">
+
+        <div id="rec_edit_status" class="status"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="rec_deleteBtn" type="button" class="danger">Delete</button>
+        <div style="flex:1;"></div>
+        <button id="rec_saveBtn" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ===== Debug helpers: toggle click probe ===== */
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey && e.altKey && (e.key === "d" || e.key === "D")) {
+    document.body.classList.toggle("debug-click");
+    console.log("debug-click =", document.body.classList.contains("debug-click"));
+  }
+});
+</script>
 
 <script>
 /* -------------------------
@@ -863,17 +1123,11 @@ document.getElementById("pd_removeAllSelectedBtn").addEventListener("click", () 
 
 document.getElementById("pd_staffSearch").addEventListener("input", applyStaffFilters);
 
-/* -------------------------
-   VENUE OTHER
-------------------------- */
 document.getElementById("pd_venue").addEventListener("change", function() {
   const box = document.getElementById("pd_otherVenue");
   box.style.display = this.value === "__OTHER__" ? "block" : "none";
 });
 
-/* -------------------------
-   INITIAL LOAD
-------------------------- */
 async function loadInitialData() {
   try {
     setStatus("Loading…", "black");
@@ -894,7 +1148,6 @@ async function loadInitialData() {
     GLOBAL.sectors = lookupsJson.sectors || [];
     GLOBAL.sites = lookupsJson.sites || [];
 
-    // Area dropdown
     const areaSel = document.getElementById("pd_area");
     areaSel.innerHTML = '<option value="">Select Area</option>';
     GLOBAL.areas.forEach(a => {
@@ -904,19 +1157,17 @@ async function loadInitialData() {
       areaSel.appendChild(opt);
     });
 
-    // Venue dropdown (text-based for now)
     const venueSel = document.getElementById("pd_venue");
     venueSel.innerHTML = '<option value="">Select Venue</option>';
 
-    const venueNames = uniqSorted([
-      ...GLOBAL.sites.map(s => s.SiteName),
-      "Online"
-    ]);
+    const venueRes = await fetch("/api/venues");
+    const venueJson = await venueRes.json();
+    if (!venueJson.ok) throw new Error(venueJson.error || "Failed to load venues.");
 
-    venueNames.forEach(v => {
+    (venueJson.venues || []).forEach(v => {
       const opt = document.createElement("option");
-      opt.value = v;
-      opt.textContent = v;
+      opt.value = String(v.VenueID);
+      opt.textContent = v.VenueName;
       venueSel.appendChild(opt);
     });
 
@@ -925,7 +1176,6 @@ async function loadInitialData() {
     otherOpt.textContent = "Other venue";
     venueSel.appendChild(otherOpt);
 
-    // Filters
     const sectors = uniqSorted(GLOBAL.staff.map(s => s.Sector));
     const campuses = uniqSorted(GLOBAL.staff.flatMap(s => [s.Campus1, s.Campus2]));
     const positions = uniqSorted(GLOBAL.staff.map(s => s.Position));
@@ -948,24 +1198,25 @@ async function loadInitialData() {
 
 document.addEventListener("DOMContentLoaded", loadInitialData);
 
-/* -------------------------
-   FORM SUBMIT
-------------------------- */
 document.getElementById("pdForm").addEventListener("submit", async function(e) {
   e.preventDefault();
+
+  const entryVisible = !document.getElementById("mode-entry").hidden;
+  if (!entryVisible) return;
 
   const submitBtn = document.getElementById("pd_submitBtn");
 
   if (!submitBtn.dataset.origText) submitBtn.dataset.origText = submitBtn.textContent;
   if (!submitBtn.dataset.origBg) submitBtn.dataset.origBg = submitBtn.style.background || "#1976d2";
 
-  // Venue handling
   const venueSel = document.getElementById("pd_venue");
-  let venueText = venueSel.value;
+  let venueId = venueSel.value || null;
+  let venueOther = null;
 
-  if (venueText === "__OTHER__") {
-    venueText = document.getElementById("pd_otherVenue").value.trim();
-    if (!venueText) {
+  if (venueId === "__OTHER__") {
+    venueId = null;
+    venueOther = document.getElementById("pd_otherVenue").value.trim();
+    if (!venueOther) {
       setStatus("Please enter the other venue.", "red");
       return;
     }
@@ -982,8 +1233,8 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
     endDate: document.getElementById("pd_endDate").value || null,
     areaId: parseInt(document.getElementById("pd_area").value, 10),
     title: document.getElementById("pd_title").value,
-    venueId: null,
-    venueOther: venueText,
+    venueId: venueId ? parseInt(venueId, 10) : null,
+    venueOther: venueOther,
     hours: Number(document.getElementById("pd_hours").value),
     crt: Number(document.getElementById("pd_crtCost").value || 0),
     enrol: Number(document.getElementById("pd_enrolCost").value || 0),
@@ -1008,7 +1259,6 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
 
     setStatus(`Saved. Inserted rows: ${json.insertedRows}`, "green");
 
-    // Reset form + selection state
     document.getElementById("pdForm").reset();
     document.getElementById("pd_otherVenue").style.display = "none";
 
@@ -1037,6 +1287,20 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
   }
 });
 </script>
+
+<script>
+/* Mode status display updated by records.js setMode() */
+(function(){
+  const el = document.getElementById("modeStatus");
+  const update = () => {
+    const active = document.querySelector(".tab.active")?.dataset?.mode || "entry";
+    if (el) el.textContent = `(mode: ${active})`;
+  };
+  setInterval(update, 300);
+})();
+</script>
+
+<script src="records.js"></script>
 
 </body>
 </html>
