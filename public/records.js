@@ -244,118 +244,159 @@ async function initRecords() {
   if (venueSel) venueSel.addEventListener("change", syncVenueOtherEnabled);
 
   // filters + paging
-  qs("rec_applyBtn").addEventListener("click", () => loadRecords(1));
-  qs("rec_clearBtn").addEventListener("click", () => {
-    qs("rec_from").value = "";
-    qs("rec_to").value = "";
-    qs("rec_staff").value = "";
-    qs("rec_area").value = "";
-    qs("rec_venue").value = "";
-    qs("rec_accrual").value = "";
-    qs("rec_q").value = "";
-    loadRecords(1);
-  });
-  qs("rec_prevBtn").addEventListener("click", () => loadRecords(recState.page - 1));
-  qs("rec_nextBtn").addEventListener("click", () => loadRecords(recState.page + 1));
+  const applyBtn = qs("rec_applyBtn");
+  if (applyBtn) applyBtn.addEventListener("click", () => loadRecords(1));
+
+  const clearBtn = qs("rec_clearBtn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      qs("rec_from").value = "";
+      qs("rec_to").value = "";
+      qs("rec_staff").value = "";
+      qs("rec_area").value = "";
+      qs("rec_venue").value = "";
+      qs("rec_accrual").value = "";
+      qs("rec_q").value = "";
+      loadRecords(1);
+    });
+  }
+
+  const prevBtn = qs("rec_prevBtn");
+  if (prevBtn) prevBtn.addEventListener("click", () => loadRecords(recState.page - 1));
+
+  const nextBtn = qs("rec_nextBtn");
+  if (nextBtn) nextBtn.addEventListener("click", () => loadRecords(recState.page + 1));
 
   // save
-  qs("rec_saveBtn").addEventListener("click", async () => {
-    const id = Number(qs("rec_edit_id").value);
+  const saveBtn = qs("rec_saveBtn");
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async () => {
+      const id = Number(qs("rec_edit_id").value);
 
-    const venueIdVal = qs("rec_edit_venue").value;
-    const venueId = venueIdVal ? Number(venueIdVal) : null;
-    const venueOther = venueId ? null : (qs("rec_edit_venueOther").value.trim() || null);
+      const venueIdVal = qs("rec_edit_venue").value;
+      const venueId = venueIdVal ? Number(venueIdVal) : null;
+      const venueOther = venueId ? null : (qs("rec_edit_venueOther").value.trim() || null);
 
-    const body = {
-      StartDate: qs("rec_edit_start").value || null,
-      EndDate: qs("rec_edit_end").value || null,
-      AreaID: qs("rec_edit_area").value ? Number(qs("rec_edit_area").value) : null,
-      Title: qs("rec_edit_title").value.trim() || null,
-      VenueID: venueId,
-      VenueOther: venueOther,
-      Hours: qs("rec_edit_hours").value === "" ? null : Number(qs("rec_edit_hours").value),
-      CRT: qs("rec_edit_crt").value === "" ? null : Number(qs("rec_edit_crt").value),
-      Enrol: qs("rec_edit_enrol").value === "" ? null : Number(qs("rec_edit_enrol").value),
-      Other: qs("rec_edit_other").value === "" ? null : Number(qs("rec_edit_other").value),
-      IsAccrual: qs("rec_edit_accrual").value === "1",
-    };
+      const body = {
+        StartDate: qs("rec_edit_start").value || null,
+        EndDate: qs("rec_edit_end").value || null,
+        AreaID: qs("rec_edit_area").value ? Number(qs("rec_edit_area").value) : null,
+        Title: qs("rec_edit_title").value.trim() || null,
+        VenueID: venueId,
+        VenueOther: venueOther,
+        Hours: qs("rec_edit_hours").value === "" ? null : Number(qs("rec_edit_hours").value),
+        CRT: qs("rec_edit_crt").value === "" ? null : Number(qs("rec_edit_crt").value),
+        Enrol: qs("rec_edit_enrol").value === "" ? null : Number(qs("rec_edit_enrol").value),
+        Other: qs("rec_edit_other").value === "" ? null : Number(qs("rec_edit_other").value),
+        IsAccrual: qs("rec_edit_accrual").value === "1",
+      };
 
-    if (!body.StartDate) return (qs("rec_edit_status").textContent = "Start Date is required.");
-    if (!body.AreaID) return (qs("rec_edit_status").textContent = "Area is required.");
-    if (!body.Title) return (qs("rec_edit_status").textContent = "Title is required.");
-    if (!body.VenueID && !body.VenueOther) return (qs("rec_edit_status").textContent = "Venue Other is required when Venue is Other.");
+      if (!body.StartDate) return (qs("rec_edit_status").textContent = "Start Date is required.");
+      if (!body.AreaID) return (qs("rec_edit_status").textContent = "Area is required.");
+      if (!body.Title) return (qs("rec_edit_status").textContent = "Title is required.");
+      if (!body.VenueID && !body.VenueOther)
+        return (qs("rec_edit_status").textContent = "Venue Other is required when Venue is Other.");
 
-    qs("rec_edit_status").textContent = "Saving…";
-    try {
-      await apiSend(`/api/pdrecords/${id}`, "PATCH", body);
-      showModal(false);
-      await loadRecords(recState.page);
-    } catch (e) {
-      console.error(e);
-      qs("rec_edit_status").textContent = "Save failed.";
-    }
-  });
+      qs("rec_edit_status").textContent = "Saving…";
+      try {
+        await apiSend(`/api/pdrecords/${id}`, "PATCH", body);
+        showModal(false);
+        await loadRecords(recState.page);
+      } catch (e) {
+        console.error(e);
+        qs("rec_edit_status").textContent = "Save failed.";
+      }
+    });
+  }
 
   // delete
-  qs("rec_deleteBtn").addEventListener("click", async () => {
-    const id = Number(qs("rec_edit_id").value);
-    if (!confirm("Soft delete this record?")) return;
+  const deleteBtn = qs("rec_deleteBtn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      const id = Number(qs("rec_edit_id").value);
+      if (!confirm("Soft delete this record?")) return;
 
-    qs("rec_edit_status").textContent = "Deleting…";
-    try {
-      await apiSend(`/api/pdrecords/${id}`, "DELETE");
-      showModal(false);
-      await loadRecords(1);
-    } catch (e) {
-      console.error(e);
-      qs("rec_edit_status").textContent = "Delete failed.";
-    }
-  });
+      qs("rec_edit_status").textContent = "Deleting…";
+      try {
+        await apiSend(`/api/pdrecords/${id}`, "DELETE");
+        showModal(false);
+        await loadRecords(1);
+      } catch (e) {
+        console.error(e);
+        qs("rec_edit_status").textContent = "Delete failed.";
+      }
+    });
+  }
 
   // CSV export
-  qs("rec_exportCsvBtn").addEventListener("click", async () => {
-    const all = [];
-    let page = 1;
+  const csvBtn = qs("rec_exportCsvBtn");
+  if (csvBtn) {
+    csvBtn.addEventListener("click", async () => {
+      const all = [];
+      let page = 1;
 
-    while (true) {
-      const data = await apiGet(buildRecordsQuery(page));
-      const rows = data.rows || [];
-      all.push(...rows);
-      if (all.length >= (data.total || 0) || rows.length === 0) break;
-      page++;
-      if (page > 2000) break;
-    }
+      while (true) {
+        const data = await apiGet(buildRecordsQuery(page));
+        const rows = data.rows || [];
+        all.push(...rows);
+        if (all.length >= (data.total || 0) || rows.length === 0) break;
+        page++;
+        if (page > 2000) break;
+      }
 
-    const header = ["StartDate","Staff","Area","Venue","Title","Hours","Total","Accrual"];
-    const lines = [header.join(",")];
+      const header = ["StartDate", "Staff", "Area", "Venue", "Title", "Hours", "Total", "Accrual"];
+      const lines = [header.join(",")];
 
-    for (const r of all) {
-      const staffName = (r.StaffNameCurrent || r.StaffNameSnapshot || "").replaceAll('"','""');
-      const row = [
-        fmtDateDMY(r.StartDate),
-        `"${staffName}"`,
-        `"${String(r.AreaName||"").replaceAll('"','""')}"`,
-        `"${String(r.VenueDisplay||"").replaceAll('"','""')}"`,
-        `"${String(r.Title||"").replaceAll('"','""')}"`,
-        r.Hours ?? "",
-        r.Total ?? "",
-        r.IsAccrual ? "Yes" : "No",
-      ];
-      lines.push(row.join(","));
-    }
+      for (const r of all) {
+        const staffName = (r.StaffNameCurrent || r.StaffNameSnapshot || "").replaceAll('"', '""');
+        const row = [
+          fmtDateDMY(r.StartDate),
+          `"${staffName}"`,
+          `"${String(r.AreaName || "").replaceAll('"', '""')}"`,
+          `"${String(r.VenueDisplay || "").replaceAll('"', '""')}"`,
+          `"${String(r.Title || "").replaceAll('"', '""')}"`,
+          r.Hours ?? "",
+          r.Total ?? "",
+          r.IsAccrual ? "Yes" : "No",
+        ];
+        lines.push(row.join(","));
+      }
 
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `pd-records-${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  });
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `pd-records-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+  }
+
+  // PDF certificates export (one page per staff)
+  const pdfBtn = qs("rec_exportPdfBtn");
+  if (pdfBtn) {
+    pdfBtn.addEventListener("click", () => {
+      const q = buildRecordsQuery(1);
+
+      // If buildRecordsQuery returns URLSearchParams, strip paging
+      if (typeof q.delete === "function") {
+        q.delete("page");
+        q.delete("pageSize");
+      }
+
+      const url =
+        typeof q.toString === "function"
+          ? `/api/pdrecords/certificates.pdf?${q.toString()}`
+          : `/api/pdrecords/certificates.pdf?${q}`;
+
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+  }
 
   await initRecordsLookups();
   await loadRecords(1);
 }
+
 
 /* -------------------------
    Mode system (MUST be after recState + initRecords exist)

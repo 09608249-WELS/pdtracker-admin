@@ -9,6 +9,7 @@ const { getPool } = require("./db");
 // ✅ Mount routers
 const pdrecordsRouter = require("./routes/pdrecords");
 const venuesRouter = require("./routes/venues");
+const certificates = require("./routes/certificates");
 console.log("ENV SQL_SERVER =", process.env.SQL_SERVER);
 
 const app = express();
@@ -21,7 +22,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // ✅ GET /api/pdrecords (list + paging) + PATCH/DELETE /api/pdrecords/:id
 app.use("/api/pdrecords", pdrecordsRouter);
 app.use("/api/venues", venuesRouter);
-
+app.use("/api", certificates);
 // Health check (real DB call)
 app.get("/api/health", async (req, res) => {
   try {
