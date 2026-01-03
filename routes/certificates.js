@@ -8,11 +8,23 @@ const fs = require("fs");
 const path = require("path");
 
 function loadLogoDataUri() {
-  const p = path.join(__dirname, "..", "public", "assets", "wels-logo.png");
-  if (!fs.existsSync(p)) return null;
+  const p = path.join(process.cwd(), "public", "assets", "wels-logo.png");
+
+  if (!fs.existsSync(p)) {
+    return null;
+  }
+
+  const ext = path.extname(p).toLowerCase();
+  const mime =
+    ext === ".png" ? "image/png" :
+    ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" :
+    "image/png";
+
   const b64 = fs.readFileSync(p).toString("base64");
-  return `data:image/png;base64,${b64}`;
+
+  return `data:${mime};base64,${b64}`;
 }
+
 
 function toDMY(d) {
   if (!d) return "";
@@ -330,10 +342,13 @@ router.get("/pdrecords/certificates.pdf", async (req, res) => {
     return;
   }
 
-  const html = renderCertificatesHtml(groups, {
-    schoolName: "Western English Language School",
-    title: "Certificate of Professional Development",
-  });
+const logoDataUri = loadLogoDataUri(); // ✅ actually load it
+
+const html = renderCertificatesHtml(groups, {
+  logoDataUri, // ✅ pass into template
+  title: "Certificate of Professional Development",
+});
+
 
   const browser = await puppeteer.launch({
     // Windows-safe defaults; add args if your environment needs them
