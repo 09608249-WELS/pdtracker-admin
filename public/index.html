@@ -347,7 +347,7 @@
 
   /* Submit button polish */
   #pd_submitBtn{
-    cursor: pointer; /* finger hover */
+    cursor: pointer;
     transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
   }
   #pd_submitBtn:hover{
@@ -401,19 +401,91 @@
   .mode-panel { margin-top: 10px; }
 
   .card { border:1px solid var(--border); border-radius:14px; padding:14px; background:#fff; margin-bottom:14px; box-shadow: var(--shadow); }
-  .card-header { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .card-actions button { padding:8px 10px; border-radius:10px; border:1px solid var(--border2); background:#fff; cursor:pointer; }
+  .card-header { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .card-actions { display:flex; gap:10px; flex-wrap:wrap; }
+
+  /* ✅ Global button style (matches Entry mode polish) */
+  button{
+    cursor: pointer;
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    background: #fff;
+    font-weight: 700;
+    padding: 8px 10px;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease, filter 120ms ease;
+  }
+  button:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    filter: brightness(0.99);
+  }
+  button:active{
+    transform: translateY(0px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+  }
+  button:disabled{
+    cursor: not-allowed;
+    opacity: 0.65;
+    transform: none;
+    box-shadow: none;
+  }
+
+  button.danger, .danger-btn, .rowicon-btn.danger{
+    border-color:#ffb3b3 !important;
+    color:#c62828 !important;
+    background:#fff !important;
+  }
+  button.danger:hover, .danger-btn:hover, .rowicon-btn.danger:hover{
+    background:#fff1f1 !important;
+  }
 
   .filters { display:grid; grid-template-columns: repeat(6, minmax(140px, 1fr)); gap:10px; margin-top:10px; align-items:end; }
   .filter-wide { grid-column: span 2; }
   .filter-actions { display:flex; gap:10px; align-items:end; justify-content:flex-end; }
+
+  /* ✅ toast sits bottom-right in filters */
+  .rec-toast{
+    margin-right: 10px;
+    font-weight: 700;
+    color: #2e7d32;
+    font-size: 0.95rem;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 160ms ease, transform 160ms ease;
+    white-space: nowrap;
+  }
+  .rec-toast.show{
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .rec-toast.error{
+    color: #c62828;
+  }
 
   .table-wrap { overflow:auto; }
   .grid { width:100%; border-collapse:collapse; }
   .grid th, .grid td { border-bottom:1px solid #eee; padding:10px; vertical-align:top; }
   .grid th { text-align:left; font-weight:800; }
   .grid td.num, .grid th.num { text-align:right; }
-  .grid .rowbtn { padding:8px 10px; border-radius:10px; border:1px solid var(--border2); background:#fff; cursor:pointer; position:relative; z-index:1; }
+
+  /* Row icon buttons (Edit/Delete) */
+  .rowicon-btn{
+    border:1px solid var(--border2);
+    background:#fff;
+    border-radius:10px;
+    padding:6px 8px;
+    cursor:pointer;
+    line-height: 1;
+  }
+  .rowicon-btn:hover{ background:#f6f7f9; }
+
+  .rowicon-btn svg{
+    display:block;
+    color:#666;
+  }
+  .rowicon-btn.danger svg{
+    color:#c62828;
+  }
 
   .pager { display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
   .pager-buttons { display:flex; gap:10px; }
@@ -424,20 +496,44 @@
   .modal[hidden], .modal[hidden] * { pointer-events:none !important; }
 
   .modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,0.35); }
-  .modal-card { position:relative; width:min(760px, calc(100vw - 24px)); background:#fff; border-radius:16px; border:1px solid var(--border); overflow:hidden; }
-  .modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #eee; }
-  .modal-body { padding:14px; display:grid; gap:10px; }
-  .modal-footer { display:flex; gap:10px; padding:12px 14px; border-top:1px solid #eee; }
+
+  /* Smaller modal */
+  .modal-card {
+    position:relative;
+    width:min(640px, calc(100vw - 24px));
+    max-height: calc(100vh - 80px);
+    overflow:auto;
+    background:#fff;
+    border-radius:16px;
+    border:1px solid var(--border);
+  }
+
+  .modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid #eee; position:sticky; top:0; background:#fff; z-index: 2; }
+  .modal-body { padding:14px; }
+  .modal-footer { display:flex; gap:10px; padding:12px 14px; border-top:1px solid #eee; position:sticky; bottom:0; background:#fff; z-index: 2; }
+
   .icon-btn { border:1px solid var(--border2); background:#fff; border-radius:10px; padding:6px 10px; cursor:pointer; }
   .danger { border:1px solid #c62828; color:#c62828; background:#fff; }
-  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+  /* New modal grid layout */
+  .modal-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+  }
+  .modal-grid .span-2{ grid-column: span 2; }
+  .modal-grid .field label{ margin-top:0; }
+
   .status { min-height: 18px; font-size: 13px; opacity: 0.85; }
 
   @media (max-width: 900px){
     .filters{ grid-template-columns:1fr 1fr; }
     .filter-wide{ grid-column: span 2; }
     .filter-actions{ justify-content:stretch; }
-    .two-col{ grid-template-columns:1fr; }
+  }
+  @media (max-width: 720px){
+    .modal-grid{ grid-template-columns: 1fr; }
+    .modal-grid .span-2{ grid-column: auto; }
   }
 
   /* ===== Debug click probe (toggle with Ctrl+Alt+D) ===== */
@@ -454,7 +550,6 @@
     <h1>Records Manager</h1>
     <div id="modeStatus">(mode: entry)</div>
   </div>
-
 </div>
 
 <nav class="tabs">
@@ -467,7 +562,6 @@
 <form id="pdForm">
   <section id="mode-entry" class="mode-panel">
     <div class="two-column">
-
       <div>
         <fieldset>
           <legend><strong>Details</strong></legend>
@@ -612,7 +706,6 @@
       <div class="card-actions">
         <button id="rec_exportCsvBtn" type="button">Export CSV</button>
         <button id="rec_exportPdfBtn" type="button">PDF Certificates</button>
-
       </div>
     </div>
 
@@ -662,7 +755,7 @@
       </div>
 
       <div class="filter-actions">
-        <button id="rec_applyBtn" type="button">Apply</button>
+        <div id="rec_toast" class="rec-toast" aria-live="polite"></div>
         <button id="rec_clearBtn" type="button">Clear</button>
       </div>
     </div>
@@ -681,7 +774,7 @@
             <th class="num">Hours</th>
             <th class="num">Total</th>
             <th>Accrual</th>
-            <th></th>
+            <th style="text-align:right;">Actions</th>
           </tr>
         </thead>
         <tbody id="rec_tbody">
@@ -703,67 +796,75 @@
     <div class="modal-backdrop" data-close="1"></div>
     <div class="modal-card">
       <div class="modal-header">
-        <h3 style="margin:0;">Edit PD Record</h3>
+        <h3 id="rec_modalTitle" style="margin:0;">Edit PD Record</h3>
         <button class="icon-btn" data-close="1" type="button">✕</button>
       </div>
 
       <div class="modal-body">
         <input type="hidden" id="rec_edit_id">
 
-        <div class="two-col">
-          <div>
+        <div class="modal-grid">
+          <div class="field">
             <label>Start Date</label>
             <input type="date" id="rec_edit_start">
           </div>
-          <div>
+          <div class="field">
             <label>End Date</label>
             <input type="date" id="rec_edit_end">
           </div>
-        </div>
 
-        <label>Area</label>
-        <select id="rec_edit_area"></select>
+          <div class="field">
+            <label>Area</label>
+            <select id="rec_edit_area"></select>
+          </div>
 
-        <label>Venue</label>
-        <select id="rec_edit_venue">
-          <option value="">Other (type below)</option>
-        </select>
+          <div class="field">
+            <label>Venue</label>
+            <select id="rec_edit_venue">
+              <option value="">Other (type below)</option>
+            </select>
+          </div>
 
-        <label>Venue (Other)</label>
-        <input type="text" id="rec_edit_venueOther" placeholder="Only used if Venue is set to Other">
+          <div class="field">
+            <label>Venue (Other)</label>
+            <input type="text" id="rec_edit_venueOther" placeholder="Only used if Venue is set to Other">
+          </div>
 
-        <label>Title</label>
-        <input type="text" id="rec_edit_title">
+          <div class="field span-2">
+            <label>Title</label>
+            <input type="text" id="rec_edit_title">
+          </div>
 
-        <div class="two-col">
-          <div>
+          <div class="field">
             <label>Hours</label>
             <input type="number" step="0.5" min="0" id="rec_edit_hours">
           </div>
-          <div>
+          <div class="field">
             <label>Accrual</label>
             <select id="rec_edit_accrual">
               <option value="0">No</option>
               <option value="1">Yes</option>
             </select>
           </div>
-        </div>
 
-        <div class="two-col">
-          <div>
+          <div class="field">
             <label>CRT</label>
             <input type="number" step="0.01" min="0" id="rec_edit_crt">
           </div>
-          <div>
+          <div class="field">
             <label>Enrol</label>
             <input type="number" step="0.01" min="0" id="rec_edit_enrol">
           </div>
+
+          <div class="field">
+            <label>Other</label>
+            <input type="number" step="0.01" min="0" id="rec_edit_other">
+          </div>
+
+          <div class="field span-2">
+            <div id="rec_edit_status" class="status"></div>
+          </div>
         </div>
-
-        <label>Other</label>
-        <input type="number" step="0.01" min="0" id="rec_edit_other">
-
-        <div id="rec_edit_status" class="status"></div>
       </div>
 
       <div class="modal-footer">

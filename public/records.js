@@ -30,6 +30,19 @@ function fmtCurrencyAUD(v){
 }
 
 /* -------------------------
+   Icon SVGs (slick monochrome)
+------------------------- */
+const ICON_PENCIL = `
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08zM20.71 7.04a1.003 1.003 0 0 0 0-1.42L18.37 3.29a1.003 1.003 0 0 0-1.42 0L15.13 5.11l3.75 3.75 1.83-1.82z"/>
+</svg>`;
+
+const ICON_TRASH = `
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path fill="currentColor" d="M6 7h12l-1 14H7L6 7zm3-3h6l1 2H8l1-2z"/>
+</svg>`;
+
+/* -------------------------
    Records state (MUST be before setMode/initRecords runs)
 ------------------------- */
 const recState = {
@@ -59,6 +72,36 @@ async function apiSend(url, method, body) {
   });
   if (!r.ok) throw new Error(await r.text());
   return r.json().catch(() => ({}));
+}
+
+/* -------------------------
+   debounce helper (auto filters)
+------------------------- */
+function debounce(fn, ms = 250) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+}
+
+/* -------------------------
+   Records toast (bottom-right)
+------------------------- */
+function showRecToast(msg, kind = "ok") {
+  const el = qs("rec_toast");
+  if (!el) return;
+
+  el.textContent = msg || "";
+  el.classList.remove("show", "error");
+  if (kind === "error") el.classList.add("error");
+
+  requestAnimationFrame(() => el.classList.add("show"));
+
+  clearTimeout(showRecToast._t);
+  showRecToast._t = setTimeout(() => {
+    el.classList.remove("show");
+  }, 2600);
 }
 
 /* -------------------------
@@ -113,8 +156,13 @@ function renderRecordsTable() {
         <td class="num">${escapeHtml(r.Hours ?? "")}</td>
         <td class="num">${escapeHtml(fmtCurrencyAUD(r.Total))}</td>
         <td>${r.IsAccrual ? "Yes" : "No"}</td>
-        <td style="text-align:right;">
-          <button type="button" class="rowbtn" data-edit="${r.PDRecordID}">Edit</button>
+        <td style="text-align:right; white-space:nowrap;">
+          <button type="button" class="rowicon-btn" data-edit="${r.PDRecordID}" title="Edit" aria-label="Edit">
+            ${ICON_PENCIL}
+          </button>
+          <button type="button" class="rowicon-btn danger" data-del="${r.PDRecordID}" title="Delete" aria-label="Delete">
+            ${ICON_TRASH}
+          </button>
         </td>
       </tr>
     `;
@@ -146,8 +194,14 @@ function showModal(show) {
   const modal = qs("rec_modal");
   if (!modal) return;
   modal.hidden = !show;
+
   const st = qs("rec_edit_status");
   if (st) st.textContent = "";
+
+  if (!show) {
+    const titleEl = qs("rec_modalTitle");
+    if (titleEl) titleEl.textContent = "Edit PD Record";
+  }
 }
 
 function syncVenueOtherEnabled() {
@@ -162,10 +216,12 @@ function syncVenueOtherEnabled() {
 }
 
 function openEditModal(id) {
-  console.log("openEditModal", id);
-
   const r = recState.rows.find(x => Number(x.PDRecordID) === Number(id));
   if (!r) return;
+
+  const staffName = r.StaffNameCurrent || r.StaffNameSnapshot || "Unknown Staff";
+  const titleEl = qs("rec_modalTitle");
+  if (titleEl) titleEl.textContent = `Edit PD Record – ${staffName}`;
 
   qs("rec_edit_id").value = String(id);
   qs("rec_edit_start").value = fmtDateISO(r.StartDate);
@@ -223,11 +279,32 @@ async function initRecords() {
   // Delegated handler (tbody is stable even when rows re-render)
   const tbody = qs("rec_tbody");
   if (tbody) {
-    tbody.addEventListener("click", (e) => {
-      const btn = e.target.closest("[data-edit]");
-      if (!btn) return;
-      e.preventDefault();
-      openEditModal(Number(btn.dataset.edit));
+    tbody.addEventListener("click", async (e) => {
+      const editBtn = e.target.closest("[data-edit]");
+      if (editBtn) {
+        e.preventDefault();
+        openEditModal(Number(editBtn.dataset.edit));
+        return;
+      }
+
+      const delBtn = e.target.closest("[data-del]");
+      if (delBtn) {
+        e.preventDefault();
+        const id = Number(delBtn.dataset.del);
+        if (!id) return;
+        if (!confirm("Soft delete this record?")) return;
+
+        try {
+          await apiSend(`/api/pdrecords/${id}`, "DELETE");
+          await loadRecords(1);
+          showRecToast("Deleted ✔");
+        } catch (err) {
+          console.error(err);
+          alert("Delete failed.");
+          showRecToast("Delete failed", "error");
+        }
+        return;
+      }
     });
   }
 
@@ -243,10 +320,19 @@ async function initRecords() {
   const venueSel = qs("rec_edit_venue");
   if (venueSel) venueSel.addEventListener("change", syncVenueOtherEnabled);
 
-  // filters + paging
-  const applyBtn = qs("rec_applyBtn");
-  if (applyBtn) applyBtn.addEventListener("click", () => loadRecords(1));
+  // ✅ auto filters (Apply removed)
+  const autoRefresh = debounce(() => loadRecords(1), 250);
 
+  ["rec_from","rec_to","rec_staff","rec_area","rec_venue","rec_accrual"].forEach(id => {
+    const el = qs(id);
+    if (!el) return;
+    el.addEventListener("change", autoRefresh);
+  });
+
+  const qEl = qs("rec_q");
+  if (qEl) qEl.addEventListener("input", debounce(() => loadRecords(1), 350));
+
+  // Clear filters
   const clearBtn = qs("rec_clearBtn");
   if (clearBtn) {
     clearBtn.addEventListener("click", () => {
@@ -261,6 +347,7 @@ async function initRecords() {
     });
   }
 
+  // paging
   const prevBtn = qs("rec_prevBtn");
   if (prevBtn) prevBtn.addEventListener("click", () => loadRecords(recState.page - 1));
 
@@ -302,14 +389,16 @@ async function initRecords() {
         await apiSend(`/api/pdrecords/${id}`, "PATCH", body);
         showModal(false);
         await loadRecords(recState.page);
+        showRecToast("Saved ✔");
       } catch (e) {
         console.error(e);
         qs("rec_edit_status").textContent = "Save failed.";
+        showRecToast("Save failed", "error");
       }
     });
   }
 
-  // delete
+  // delete (modal)
   const deleteBtn = qs("rec_deleteBtn");
   if (deleteBtn) {
     deleteBtn.addEventListener("click", async () => {
@@ -321,9 +410,11 @@ async function initRecords() {
         await apiSend(`/api/pdrecords/${id}`, "DELETE");
         showModal(false);
         await loadRecords(1);
+        showRecToast("Deleted ✔");
       } catch (e) {
         console.error(e);
         qs("rec_edit_status").textContent = "Delete failed.";
+        showRecToast("Delete failed", "error");
       }
     });
   }
@@ -376,19 +467,12 @@ async function initRecords() {
   const pdfBtn = qs("rec_exportPdfBtn");
   if (pdfBtn) {
     pdfBtn.addEventListener("click", () => {
-      const q = buildRecordsQuery(1);
+      // build from the existing query, then strip paging for PDF
+      const u = new URL(buildRecordsQuery(1), window.location.origin);
+      u.searchParams.delete("page");
+      u.searchParams.delete("pageSize");
 
-      // If buildRecordsQuery returns URLSearchParams, strip paging
-      if (typeof q.delete === "function") {
-        q.delete("page");
-        q.delete("pageSize");
-      }
-
-      const url =
-        typeof q.toString === "function"
-          ? `/api/pdrecords/certificates.pdf?${q.toString()}`
-          : `/api/pdrecords/certificates.pdf?${q}`;
-
+      const url = `/api/pdrecords/certificates.pdf?${u.searchParams.toString()}`;
       window.open(url, "_blank", "noopener,noreferrer");
     });
   }
@@ -396,7 +480,6 @@ async function initRecords() {
   await initRecordsLookups();
   await loadRecords(1);
 }
-
 
 /* -------------------------
    Mode system (MUST be after recState + initRecords exist)
