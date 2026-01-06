@@ -10,6 +10,7 @@ const { getPool } = require("./db");
 const pdrecordsRouter = require("./routes/pdrecords");
 const venuesRouter = require("./routes/venues");
 const certificates = require("./routes/certificates");
+const staffRoutes = require("./routes/staff");
 console.log("ENV SQL_SERVER =", process.env.SQL_SERVER);
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/api/pdrecords", pdrecordsRouter);
 app.use("/api/venues", venuesRouter);
 app.use("/api", certificates);
+app.use("/api/staff", staffRoutes);
 // Health check (real DB call)
 app.get("/api/health", async (req, res) => {
   try {
@@ -37,19 +39,7 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Staff list
-app.get("/api/staff", async (req, res) => {
-  try {
-    const pool = await getPool();
-    const r = await pool.request().execute("dbo.uspStaff_List");
-    res.json({ ok: true, staff: r.recordset });
-  } catch (err) {
-    res.status(500).json({
-      ok: false,
-      error: err && err.message ? err.message : String(err),
-    });
-  }
-});
+
 
 // Lookups (Areas, Sectors, Sites) - multiple resultsets
 app.get("/api/lookups", async (req, res) => {

@@ -140,7 +140,10 @@
   /* Chip hover feel */
   #pd_sectorFilterGroup .filter-checkbox:hover,
   #pd_campusFilterGroup .filter-checkbox:hover,
-  #pd_positionFilterGroup .filter-checkbox:hover{
+  #pd_positionFilterGroup .filter-checkbox:hover,
+  #sm_sectorFilterGroup .filter-checkbox:hover,
+  #sm_campusFilterGroup .filter-checkbox:hover,
+  #sm_positionFilterGroup .filter-checkbox:hover{
     border-color: rgba(25,118,210,0.35);
     box-shadow: 0 6px 18px rgba(0,0,0,0.08);
     transform: translateY(-1px);
@@ -539,6 +542,74 @@
   /* ===== Debug click probe (toggle with Ctrl+Alt+D) ===== */
   body.debug-click * { outline: 1px dashed rgba(25,118,210,0.35); }
   #modeStatus { font-size: 0.9rem; color:#666; }
+
+  /* =========================================================
+     STAFF MANAGER: chips/pills (mirror pd_* groups)
+     ========================================================= */
+
+  #sm_sectorFilterGroup{
+    display:flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow: hidden;
+  }
+  #sm_sectorFilterGroup .filter-checkbox{
+    flex: 1 1 0;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  #sm_campusFilterGroup{
+    display:grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    max-height: unset;
+    overflow: hidden;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  #sm_campusFilterGroup .filter-checkbox{
+    width: 100%;
+    justify-content:flex-start;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    min-width: 0;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 900px){
+    #sm_campusFilterGroup{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  #sm_positionFilterGroup{
+    display:flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: unset;
+    padding-bottom: 6px;
+  }
+  #sm_positionFilterGroup .filter-checkbox{
+    flex: 1 1 0;
+    border: 1px solid #eaeaea;
+    background: #fff;
+    padding: 8px 10px;
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  .row-archived{
+    opacity: 0.62;
+  }
 </style>
 
 </head>
@@ -555,8 +626,7 @@
 <nav class="tabs">
   <button class="tab" data-mode="entry" type="button">Entry</button>
   <button class="tab" data-mode="records" type="button">Records</button>
-  <button class="tab" data-mode="accrual" type="button" disabled>Accrual</button>
-  <button class="tab" data-mode="staff" type="button" disabled>Staff</button>
+  <button class="tab" data-mode="staff" type="button">Staff</button>
 </nav>
 
 <form id="pdForm">
@@ -689,13 +759,7 @@
 
     <div id="pd_status" class="status" style="margin-bottom:30px;"></div>
 
-    <fieldset>
-      <legend><strong>Quick Add Staff Member</strong></legend>
-      <p style="margin:0;color:#666;">
-        Staff add/edit endpoints aren’t built yet, so this section is disabled for now.
-        (We’ll add <code>POST /api/staff</code> and <code>PUT /api/staff/:id</code> after PD UI is stable.)
-      </p>
-    </fieldset>
+    
   </section>
 </form>
 
@@ -875,6 +939,156 @@
     </div>
   </div>
 </section>
+<!-- =========================================================
+     STAFF MODE
+     ========================================================= -->
+<section id="mode-staff" class="mode-panel" hidden>
+  <div class="card">
+    <div class="card-header">
+      <h2 style="margin:0;">Staff</h2>
+      <div class="card-actions">
+        <button id="sm_addBtn" type="button">Add staff</button>
+      </div>
+    </div>
+
+    <!-- Records-style filters grid -->
+    <div class="filters">
+      <div class="filter-wide">
+        <label>Search staff</label>
+        <input type="text" id="sm_search" placeholder="Type a name or TO number…">
+      </div>
+
+      <div>
+        <label>Include archived</label>
+        <label style="display:flex; align-items:center; gap:8px; font-weight:700; margin:0;">
+          <input type="checkbox" id="sm_includeArchived">
+          Yes
+        </label>
+      </div>
+
+      <div>
+        <label>Sector</label>
+        <select id="sm_sector">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Campus</label>
+        <select id="sm_campus">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Position</label>
+        <select id="sm_position">
+          <option value="">All</option>
+        </select>
+      </div>
+
+      <div class="filter-actions">
+        <div id="sm_toast" class="rec-toast" aria-live="polite"></div>
+        <button id="sm_clearBtn" type="button">Clear</button>
+      </div>
+
+      <div class="filter-wide">
+        <div class="small-muted" style="margin-top:2px;">
+          Archived staff remain in PD history. This only hides them from active lists.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Campus 1</th>
+            <th>Campus 2</th>
+            <th>Position</th>
+            <th>Sector</th>
+            <th class="num">TO</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sm_tbody">
+          <tr><td colspan="7"><em>Run a search…</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal" id="sm_modal" hidden>
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="sm_modalTitle" style="margin:0;">Edit Staff</h3>
+        <button class="icon-btn" data-close="1" type="button">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="sm_edit_id">
+
+        <div class="modal-grid">
+          <div class="field span-2">
+            <label>Name *</label>
+            <input type="text" id="sm_edit_name">
+          </div>
+
+          <div class="field">
+            <label>Campus 1</label>
+            <select id="sm_edit_campus1">
+              <option value="">(none)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Campus 2</label>
+            <select id="sm_edit_campus2">
+              <option value="">(none)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Position</label>
+            <select id="sm_edit_position">
+              <option value="">(none)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Sector</label>
+            <select id="sm_edit_sector">
+              <option value="">(none)</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>TO Number</label>
+            <input type="number" id="sm_edit_tonumber">
+          </div>
+
+          <div class="field span-2">
+            <div id="sm_edit_status" class="status"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="sm_archiveBtn" type="button" class="danger">Archive</button>
+        <div style="flex:1;"></div>
+        <button id="sm_cancelBtn" type="button">Cancel</button>
+        <button id="sm_saveBtn" type="button">Save</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
 
 <script>
 /* ===== Debug helpers: toggle click probe ===== */
@@ -898,6 +1112,24 @@ function setStatus(msg, color) {
   const el = document.getElementById("pd_status");
   el.textContent = msg || "";
   el.style.color = color || "black";
+}
+// -------------------------
+// API HELPERS (global)
+// -------------------------
+async function apiGet(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function apiSend(url, method, body) {
+  const r = await fetch(url, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json().catch(() => ({}));
 }
 
 /* -------------------------
@@ -1404,6 +1636,34 @@ document.getElementById("pdForm").addEventListener("submit", async function(e) {
 </script>
 
 <script src="records.js"></script>
+<script src="staff.js"></script>
+
+<script>
+/* Staff mode init hook (works even before we patch records.js) */
+(function(){
+  let staffInited = false;
+
+  function tryInitStaff(){
+    if (staffInited) return;
+    if (typeof window.initStaffManager !== "function") return;
+
+    const staffPanel = document.getElementById("mode-staff");
+    const staffActive = !staffPanel?.hidden;
+    if (!staffActive) return;
+
+    staffInited = true;
+    window.initStaffManager();
+  }
+
+  // When tabs clicked, wait for mode switch to apply, then init
+  document.querySelectorAll(".tab[data-mode='staff']").forEach(btn => {
+    btn.addEventListener("click", () => setTimeout(tryInitStaff, 0));
+  });
+
+  // Also try on load (in case staff is defaulted later)
+  document.addEventListener("DOMContentLoaded", () => setTimeout(tryInitStaff, 0));
+})();
+</script>
 
 </body>
 </html>
